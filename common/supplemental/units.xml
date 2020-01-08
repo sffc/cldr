@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE supplementalData SYSTEM "../../common/dtd/ldmlSupplemental.dtd">
+<!--
+Copyright © 1991-2013 Unicode, Inc.
+CLDR data files are interpreted according to the LDML specification (http://unicode.org/reports/tr35/)
+For terms of use, see http://www.unicode.org/copyright.html
+-->
+
+<supplementalData>
+	<version number="$Revision$"/>
+	<convertUnits>
+		<convertUnit source='kilometer' target='meter' factor='1000'/>
+		<convertUnit source='inch' target='foot' factor='1/12'/>
+		<convertUnit source='kelvin' target='celsius' factor='1' offset='273.15'/>
+		<convertUnit source='mile-per-gallon' target='liter-per-kilometer' factor='2.3521' reciprocal='TRUE'/>
+		<convertUnit source='fahrenheit' target='celsius' factor='5/9' offset='-160/9'/>
+	</convertUnits>
+</supplementalData>
