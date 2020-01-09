@@ -16,6 +16,7 @@ import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo.Count;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralType;
+import org.unicode.cldr.util.UnitConverter;
 import org.unicode.cldr.util.Units;
 
 import com.google.common.collect.ImmutableMap;
@@ -269,5 +270,11 @@ public class TestUnits extends TestFmwk {
             msg(title + ", expected «" + sqmeterPattern + "», got «" + conSqmeterPattern + "»", LOG, true, true);
         }
         return true;
+    }
+    
+    public void TestConversion() {
+        UnitConverter converter = CLDRConfig.getInstance().getSupplementalDataInfo().getUnitConverter();
+        double actual = converter.convert(1, "inch", "foot");
+        assertEquals("inch to foot", 1.0/12, actual);
     }
 }
