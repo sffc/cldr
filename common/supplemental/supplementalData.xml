@@ -4912,6 +4912,17 @@ XXX Code for transations where no currency is involved
 			<unitPreference regions="GB" unit="yard"/>
 			<unitPreference regions="US" unit="foot"/>
 		</unitPreferences>
+		<!-- TODO: is usage="road-travel" appropriate for driving directions? -->
+		<unitPreferences category="length" usage="road-travel">
+			<unitPreference regions="001" unit="kilometer" geq="0.975"/>
+			<unitPreference regions="001" unit="meter" geq="300" skeleton="precision-increment/50"/>
+			<unitPreference regions="001" unit="meter" skeleton="precision-increment/10"/>
+			<unitPreference regions="US GB" unit="mile" geq="0.095"/>
+			<unitPreference regions="US" unit="foot" geq="300" skeleton="precision-increment/50"/>
+			<unitPreference regions="US" unit="foot" skeleton="precision-increment/10"/>
+			<unitPreference regions="GB" unit="yard" geq="300" skeleton="precision-increment/50"/>
+			<unitPreference regions="GB" unit="yard" skeleton="precision-increment/10"/>
+		</unitPreferences>
 		<unitPreferences category="length" usage="snowfall">
 			<unitPreference regions="001" unit="centimeter"/>
 			<unitPreference regions="US" unit="inch"/>
