@@ -907,6 +907,8 @@ public class SupplementalDataInfo {
     public Map<AttributeValidityInfo, String> attributeValidityInfo = new LinkedHashMap<>();
 
     public Multimap<String, String> languageGroups = TreeMultimap.create();
+    
+    public UnitConverter unitConverter = new UnitConverter();
 
     public enum MeasurementType {
         measurementSystem, paperSize
@@ -1286,6 +1288,10 @@ public class SupplementalDataInfo {
                     if (handleMeasurementData(level2, parts)) {
                         return;
                     }
+                } else if (level1.equals("convertUnits")) {
+                    if (handleUnitConversion(parts)) {
+                        return;
+                    }
                 } else if (level1.equals("timeData")) {
                     if (handleTimeData(parts)) {
                         return;
@@ -1334,6 +1340,19 @@ public class SupplementalDataInfo {
             }
             return true;
         }
+        
+        private boolean handleUnitConversion(XPathParts parts) {
+            final String source = parts.getAttributeValue(-1, "source");
+            final String target = parts.getAttributeValue(-1, "target");
+            String factor = parts.getAttributeValue(-1, "factor");
+            String offset = parts.getAttributeValue(-1, "offset");
+            String reciprocal = parts.getAttributeValue(-1, "reciprocal");
+            unitConverter.addRaw(
+                source, target, 
+                factor, offset, reciprocal);
+            return true;
+        }
+
 
         private boolean handleTimeData(XPathParts parts) {
             /**
@@ -4312,5 +4331,9 @@ public class SupplementalDataInfo {
 
     public Multimap<String, String> getLanguageGroups() {
         return languageGroups;
+    }
+    
+    public UnitConverter getUnitConverter() {
+        return unitConverter;
     }
 }
