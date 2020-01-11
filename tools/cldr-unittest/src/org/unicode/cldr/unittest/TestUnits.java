@@ -1,5 +1,6 @@
 package org.unicode.cldr.unittest;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.unicode.cldr.test.ExampleGenerator;
 import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.Factory;
+import org.unicode.cldr.util.Rational;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo.Count;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralType;
@@ -274,7 +276,35 @@ public class TestUnits extends TestFmwk {
     
     public void TestConversion() {
         UnitConverter converter = CLDRConfig.getInstance().getSupplementalDataInfo().getUnitConverter();
-        double actual = converter.convert(1, "inch", "foot");
-        assertEquals("inch to foot", 1.0/12, actual);
+        Rational actual = converter.convert(Rational.ONE, "inch", "foot");
+        assertEquals("inch to foot", Rational.of(1,12), actual);
+    }
+    
+    public void TestRational() {
+        Rational a6_10 = Rational.of(6,10);
+        Rational a3_5 = Rational.of(3,5);
+        assertEquals("", a3_5, a6_10);
+        
+        Rational a5_3 = Rational.of(5,3);
+        assertEquals("", a3_5, a5_3.reciprocal());
+        
+        assertEquals("", Rational.ONE, a3_5.multiply(a3_5.reciprocal()));
+        assertEquals("", Rational.ZERO, a3_5.add(a3_5.negate()));
+
+        assertEquals("", Rational.INFINITY, Rational.ZERO.reciprocal());
+        assertEquals("", Rational.NEGATIVE_INFINITY, Rational.INFINITY.negate());
+        assertEquals("", Rational.NEGATIVE_ONE, Rational.ONE.negate());
+        
+        assertEquals("", Rational.NaN, Rational.ZERO.divide(Rational.ZERO));
+        
+        assertEquals("", BigDecimal.valueOf(2), Rational.of(2,1).toBigDecimal());
+        assertEquals("", BigDecimal.valueOf(0.5), Rational.of(1,2).toBigDecimal());
+        
+        assertEquals("", BigDecimal.valueOf(100), Rational.of(100,1).toBigDecimal());
+        assertEquals("", BigDecimal.valueOf(0.01), Rational.of(1,100).toBigDecimal());
+
+        assertEquals("", Rational.of(12370,1), Rational.of(BigDecimal.valueOf(12370)));
+        assertEquals("", Rational.of(1237,10), Rational.of(BigDecimal.valueOf(1237.0/10)));
+        assertEquals("", Rational.of(1237,10000), Rational.of(BigDecimal.valueOf(1237.0/10000)));
     }
 }
