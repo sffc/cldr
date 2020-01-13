@@ -4796,127 +4796,221 @@ XXX Code for transations where no currency is involved
     </measurementData>
 
 	<unitPreferenceData>
+		<unitPreferences category="area">
+			<!-- TODO(CLDR-13489): determine general country-specific area preferences. -->
+			<unitPreference regions="001" unit="square-kilometer" geq="1"/>
+			<unitPreference regions="001" unit="hectare" geq="1"/>
+			<unitPreference regions="001" unit="square-meter" geq="1"/>
+			<unitPreference regions="001" unit="square-centimeter" geq="1"/>
+		</unitPreferences>
 		<unitPreferences category="area" usage="land-agricult">
-			<unitPreference regions="001">hectare</unitPreference>
-			<unitPreference regions="GB US">acre</unitPreference>
+			<unitPreference regions="001" unit="hectare"/>
+			<unitPreference regions="GB US" unit="acre"/>
 		</unitPreferences>
 		<unitPreferences category="area" usage="land-commercl">
-			<unitPreference regions="001">hectare</unitPreference>
-			<unitPreference regions="GB US">acre</unitPreference>
+			<unitPreference regions="001" unit="hectare"/>
+			<unitPreference regions="GB US" unit="acre"/>
 		</unitPreferences>
 		<unitPreferences category="area" usage="land-residntl">
-			<unitPreference regions="001">hectare</unitPreference>
-			<unitPreference regions="GB US">acre</unitPreference>
+			<unitPreference regions="001" unit="hectare"/>
+			<unitPreference regions="GB US" unit="acre"/>
 		</unitPreferences>
 		<unitPreferences category="concentr" usage="blood-glucose">
 			<!-- About 60% of regions use mg/dL, the rest mmol/L, some show both; does not follow metric vs imperial -->
-			<unitPreference regions="001">milligram-per-deciliter</unitPreference>
-			<unitPreference regions="AG AI AO AU BA BG BH BM BN BW BY CA CH CM CN CZ DK DM EE FI FJ GB GD HK HR HU IE IM IS KE KN KW KZ LC LI LT LU LV ME MG MK MO MS MT MU MY MZ NA NL NO NZ OM PG RS RU SE SG SI SK TC TO UA UG VC VG VN VU ZA">millimole-per-liter</unitPreference>
+			<unitPreference regions="001" unit="milligram-per-deciliter"/>
+			<unitPreference regions="AG AI AO AU BA BG BH BM BN BW BY CA CH CM CN CZ DK DM EE FI FJ GB GD HK HR HU IE IM IS KE KN KW KZ LC LI LT LU LV ME MG MK MO MS MT MU MY MZ NA NL NO NZ OM PG RS RU SE SG SI SK TC TO UA UG VC VG VN VU ZA" unit="millimole-per-liter"/>
 		</unitPreferences>
+		<unitPreferences category="consumption">
+			<unitPreference regions="001" unit="liter-per-100kilometers"/>
+			<unitPreference regions="BR IT JP KR MX MY TH TR" unit="liter-per-kilometer"/>
+			<!-- TODO(CLDR-13489): determine what we want to do with alt="informal" in our new spec. -->
+			<unitPreference regions="CA GB" unit="mile-per-gallon-imperial" alt="informal"/>
+			<unitPreference regions="NL" unit="liter-per-kilometer" alt="informal"/>
+			<!--<unitPreference regions="NO SE" unit="liter-per-mile-scandinavian" alt="informal"/>-->
+			<unitPreference regions="US" unit="mile-per-gallon"/>
+		</unitPreferences>
+		<!-- TODO(CLDR-13489): do we need a usage="XYZ" stanza when it's identical to the category default (as above)? -->
 		<unitPreferences category="consumption" usage="vehicle-fuel">
-			<unitPreference regions="001">liter-per-100kilometers</unitPreference>
-			<unitPreference regions="BR IT JP KR MX MY TH TR">liter-per-kilometer</unitPreference>
-			<unitPreference regions="CA GB" alt="informal">mile-per-gallon-imperial</unitPreference>
-			<unitPreference regions="NL" alt="informal">liter-per-kilometer</unitPreference>
-			<!--<unitPreference regions="NO SE" alt="informal">liter-per-mile-scandinavian</unitPreference>-->
-			<unitPreference regions="US">mile-per-gallon</unitPreference>
+			<unitPreference regions="001" unit="liter-per-100kilometers"/>
+			<unitPreference regions="BR IT JP KR MX MY TH TR" unit="liter-per-kilometer"/>
+			<unitPreference regions="CA GB" unit="mile-per-gallon-imperial" alt="informal"/>
+			<unitPreference regions="NL" unit="liter-per-kilometer" alt="informal"/>
+			<!--<unitPreference regions="NO SE" unit="liter-per-mile-scandinavian" alt="informal"/>-->
+			<unitPreference regions="US" unit="mile-per-gallon"/>
+		</unitPreferences>
+		<unitPreferences category="duration">
+			<unitPreference regions="001" unit="year" geq="1"/>
+			<unitPreference regions="001" unit="month" geq="1"/>
+			<unitPreference regions="001" unit="day" geq="1"/>
+			<unitPreference regions="001" unit="hour" geq="1"/>
+			<unitPreference regions="001" unit="minute" geq="1"/>
+			<unitPreference regions="001" unit="second" geq="1"/>
+			<unitPreference regions="001" unit="millisecond" geq="1"/>
+			<unitPreference regions="001" unit="microsecond" geq="1"/>
+			<unitPreference regions="001" unit="nanosecond"/>
 		</unitPreferences>
 		<unitPreferences category="duration" usage="music-track">
-			<unitPreference regions="001">minute second</unitPreference>
+			<unitPreference regions="001" unit="minute+second"/>
 		</unitPreferences>
 		<unitPreferences category="duration" usage="person-age">
-			<unitPreference regions="001">year-person month-person</unitPreference>
+			<unitPreference regions="001" unit="year-person+month-person"/>
 		</unitPreferences>
 		<unitPreferences category="duration" usage="tv-program">
-			<unitPreference regions="001">minute second</unitPreference>
+			<unitPreference regions="001" unit="minute+second"/>
+		</unitPreferences>
+		<unitPreferences category="energy">
+			<unitPreference regions="001" unit="kilojoule" geq="1"/>
+			<unitPreference regions="001" unit="joule"/>
 		</unitPreferences>
 		<unitPreferences category="energy" usage="food">
-			<unitPreference regions="001">foodcalorie</unitPreference>
+			<unitPreference regions="001" unit="foodcalorie"/>
 		</unitPreferences>
 		<unitPreferences category="energy" usage="person-usage">
-			<unitPreference regions="001">kilocalorie</unitPreference>
+			<unitPreference regions="001" unit="kilocalorie"/>
+		</unitPreferences>
+		<unitPreferences category="length">
+			<unitPreference regions="001" unit="kilometer" geq="1"/>
+			<unitPreference regions="001" unit="meter" geq="1"/>
+			<unitPreference regions="001" unit="centimeter" geq="1"/>
+			<unitPreference regions="001" unit="millimeter" geq="1"/>
+			<unitPreference regions="001" unit="micrometer" geq="1"/>
+			<unitPreference regions="001" unit="nanometer"/>
+			<unitPreference regions="GB US" unit="mile" geq="0.475"/>
+			<!-- TODO(CLDR-13489): determine whether yards are in common and general use in GB. -->
+			<!-- TODO(CLDR-13489): determine general length measures for CA, IN. -->
+			<unitPreference regions="GB US" unit="foot" geq="1"/>
+			<unitPreference regions="GB US" unit="inch"/>
 		</unitPreferences>
 		<unitPreferences category="length" usage="person">
-			<unitPreference regions="001">centimeter</unitPreference>
-			<unitPreference regions="BR CN DE DK MX NL NO PL PT RU" alt="informal">meter centimeter</unitPreference>
-			<unitPreference regions="AT BE DZ EG ES FR HK ID IL IT JO MY SA SE TR VN">meter centimeter</unitPreference>
-			<unitPreference regions="CA GB IN US" alt="informal">foot inch</unitPreference>
-			<unitPreference regions="US">inch</unitPreference>
+			<unitPreference regions="001" unit="centimeter"/>
+			<unitPreference regions="BR CN DE DK MX NL NO PL PT RU" unit="meter+centimeter" alt="informal"/>
+			<unitPreference regions="AT BE DZ EG ES FR HK ID IL IT JO MY SA SE TR VN" unit="meter+centimeter"/>
+			<unitPreference regions="CA GB IN US" unit="foot+inch" alt="informal"/>
+			<unitPreference regions="US" unit="inch"/>
 		</unitPreferences>
+		<!-- TODO(CLDR-13489): "The scope parameter remains, but is deprecated."
+		     Do we keep it here, or remove it while still supporting it in the DTD/code? -->
+		<!-- TODO(CLDR-11452): Specify cutoff between "small" and "normal":
+		     Fold small&non-small stanzas together with good "geq" thresholds. -->
 		<unitPreferences category="length" usage="person" scope="small">
-			<unitPreference regions="001">centimeter</unitPreference>
-			<unitPreference regions="CA GB IN" alt="informal">inch</unitPreference>
-			<unitPreference regions="US">inch</unitPreference>
+			<unitPreference regions="001" unit="centimeter"/>
+			<unitPreference regions="CA GB IN" unit="inch" alt="informal"/>
+			<unitPreference regions="US" unit="inch"/>
 		</unitPreferences>
 		<unitPreferences category="length" usage="rainfall">
-			<unitPreference regions="001">millimeter</unitPreference>
-			<unitPreference regions="BR">centimeter</unitPreference>
-			<unitPreference regions="US">inch</unitPreference>
+			<unitPreference regions="001" unit="millimeter"/>
+			<unitPreference regions="BR" unit="centimeter"/>
+			<unitPreference regions="US" unit="inch"/>
 		</unitPreferences>
 		<unitPreferences category="length" usage="road">
-			<unitPreference regions="001">kilometer</unitPreference>
-			<unitPreference regions="GB US">mile</unitPreference>
-			<unitPreference regions="SE" alt="informal">mile-scandinavian</unitPreference>
+			<unitPreference regions="001" unit="kilometer"/>
+			<unitPreference regions="GB US" unit="mile"/>
+			<unitPreference regions="SE" unit="mile-scandinavian" alt="informal"/>
 		</unitPreferences>
 		<unitPreferences category="length" usage="road" scope="small">
-			<unitPreference regions="001">meter</unitPreference>
-			<unitPreference regions="GB">yard</unitPreference>
-			<unitPreference regions="US">foot</unitPreference>
+			<unitPreference regions="001" unit="meter"/>
+			<unitPreference regions="GB" unit="yard"/>
+			<unitPreference regions="US" unit="foot"/>
 		</unitPreferences>
 		<unitPreferences category="length" usage="snowfall">
-			<unitPreference regions="001">centimeter</unitPreference>
-			<unitPreference regions="US">inch</unitPreference>
+			<unitPreference regions="001" unit="centimeter"/>
+			<unitPreference regions="US" unit="inch"/>
 		</unitPreferences>
 		<unitPreferences category="length" usage="vehicle">
-			<unitPreference regions="001">meter</unitPreference>
-			<unitPreference regions="GB US">foot inch</unitPreference>
-			<unitPreference regions="MX">meter centimeter</unitPreference>
+			<unitPreference regions="001" unit="meter"/>
+			<unitPreference regions="GB US" unit="foot+inch"/>
+			<unitPreference regions="MX" unit="meter+centimeter"/>
 		</unitPreferences>
 		<unitPreferences category="length" usage="visiblty">
-			<unitPreference regions="001">kilometer</unitPreference>
-			<unitPreference regions="DE NL">meter</unitPreference>
-			<unitPreference regions="GB US">mile</unitPreference>
+			<unitPreference regions="001" unit="kilometer"/>
+			<unitPreference regions="DE NL" unit="meter"/>
+			<unitPreference regions="GB US" unit="mile"/>
 		</unitPreferences>
 		<unitPreferences category="length" usage="visiblty" scope="small">
-			<unitPreference regions="001">meter</unitPreference>
-			<unitPreference regions="GB US">foot</unitPreference>
+			<unitPreference regions="001" unit="meter"/>
+			<unitPreference regions="GB US" unit="foot"/>
+		</unitPreferences>
+		<!-- Skipping light: has only lux and solar-luminosity. -->
+		<unitPreferences category="mass">
+			<unitPreference regions="001" unit="metric-ton" geq="1"/>
+			<unitPreference regions="001" unit="kilogram" geq="1"/>
+			<unitPreference regions="001" unit="gram" geq="1"/>
+			<unitPreference regions="001" unit="milligram" geq="1"/>
+			<unitPreference regions="001" unit="microgram"/>
+			<!-- TODO(CLDR-13489): Check on usage of imperial tonne in the UK. -->
+			<!-- unitPreference regions="GB" unit="ton-imperial" geq="1"/ -->
+			<!-- unitPreference regions="GB" unit="imperial-ton" geq="1"/ -->
+			<unitPreference regions="GB" unit="stone" geq="1"/>
+			<unitPreference regions="US" unit="ton" geq="1"/>
+			<unitPreference regions="GB US" unit="pound" geq="1"/>
+			<unitPreference regions="GB US" unit="ounce"/>
 		</unitPreferences>
 		<unitPreferences category="mass" usage="person">
-			<unitPreference regions="001">kilogram</unitPreference>
-			<unitPreference regions="GB">stone pound</unitPreference>
-			<unitPreference regions="US">pound</unitPreference>
+			<unitPreference regions="001" unit="kilogram"/>
+			<unitPreference regions="GB" unit="stone+pound"/>
+			<unitPreference regions="US" unit="pound"/>
 		</unitPreferences>
 		<unitPreferences category="mass" usage="person" scope="small">
-			<unitPreference regions="001">gram</unitPreference>
-			<unitPreference regions="DZ EG ES JO SA">kilogram gram</unitPreference>
-			<unitPreference regions="GB HK US">pound ounce</unitPreference>
+			<unitPreference regions="001" unit="gram"/>
+			<unitPreference regions="DZ EG ES JO SA" unit="kilogram+gram"/>
+			<!-- TODO(CLDR-13489): determine modern HK preferences beyond scope="small". -->
+			<unitPreference regions="GB HK US" unit="pound+ounce"/>
+		</unitPreferences>
+		<unitPreferences category="power">
+			<unitPreference regions="001" unit="gigawatt" geq="1"/>
+			<unitPreference regions="001" unit="megawatt" geq="1"/>
+			<unitPreference regions="001" unit="kilowatt" geq="1"/>
+			<unitPreference regions="001" unit="watt" geq="1"/>
+			<unitPreference regions="001" unit="milliwatt"/>
+		</unitPreferences>
+		<unitPreferences category="pressure">
+			<unitPreference regions="001" unit="megapascal" geq="1"/>
+			<unitPreference regions="001" unit="kilopascal" geq="1"/>
+			<!-- Skipping hectopascal for general pressure measurement -->
+			<unitPreference regions="001" unit="pascal"/>
+			<!-- TODO(CLDR-13489): determine non-barometric pressure preferences for other regions?
+			     Or do we avoid providing category-default when we don't yet know? -->
 		</unitPreferences>
 		<unitPreferences category="pressure" usage="baromtrc">
-			<unitPreference regions="001">hectopascal</unitPreference>
-			<unitPreference regions="BR EG GB IL TH">millibar</unitPreference>
-			<unitPreference regions="MX RU">millimeter-of-mercury</unitPreference>
-			<unitPreference regions="IN US">inch-hg</unitPreference>
+			<unitPreference regions="001" unit="hectopascal"/>
+			<unitPreference regions="BR EG GB IL TH" unit="millibar"/>
+			<unitPreference regions="MX RU" unit="millimeter-of-mercury"/>
+			<unitPreference regions="IN US" unit="inch-hg"/>
 		</unitPreferences>
+		<unitPreferences category="speed">
+			<unitPreference regions="001" unit="kilometer-per-hour"/>
+			<unitPreference regions="GB US" unit="mile-per-hour"/>
+		</unitPreferences>
+		<!-- TODO(CLDR-13489): list usages somewhere, and document "road" vs "road-travel". -->
 		<unitPreferences category="speed" usage="road-travel">
-			<unitPreference regions="001">kilometer-per-hour</unitPreference>
-			<unitPreference regions="GB US">mile-per-hour</unitPreference>
+			<unitPreference regions="001" unit="kilometer-per-hour"/>
+			<unitPreference regions="GB US" unit="mile-per-hour"/>
 		</unitPreferences>
 		<unitPreferences category="speed" usage="wind">
-			<unitPreference regions="001">kilometer-per-hour</unitPreference>
-			<unitPreference regions="FI KR NO PL RU SE">meter-per-second</unitPreference>
-			<unitPreference regions="US">mile-per-hour</unitPreference>
+			<unitPreference regions="001" unit="kilometer-per-hour"/>
+			<unitPreference regions="FI KR NO PL RU SE" unit="meter-per-second"/>
+			<unitPreference regions="US" unit="mile-per-hour"/>
+		</unitPreferences>
+		<unitPreferences category="temperature">
+			<unitPreference regions="001" unit="celsius"/>
+			<unitPreference regions="US" unit="fahrenheit"/>
 		</unitPreferences>
 		<unitPreferences category="temperature" usage="person">
-			<unitPreference regions="001">celsius</unitPreference>
-			<unitPreference regions="US">fahrenheit</unitPreference>
+			<unitPreference regions="001" unit="celsius"/>
+			<unitPreference regions="US" unit="fahrenheit"/>
 		</unitPreferences>
 		<unitPreferences category="temperature" usage="weather">
-			<unitPreference regions="001">celsius</unitPreference>
-			<unitPreference regions="BS BZ KY PR PW US">fahrenheit</unitPreference>
+			<unitPreference regions="001" unit="celsius"/>
+			<unitPreference regions="BS BZ KY PR PW US" unit="fahrenheit"/>
+		</unitPreferences>
+		<unitPreferences category="volume">
+			<unitPreference regions="001" unit="cubic-meter" geq="1"/>
+			<unitPreference regions="001" unit="liter" geq="1"/>
+			<unitPreference regions="001" unit="milliliter"/>
 		</unitPreferences>
 		<unitPreferences category="volume" usage="vehicle-fuel">
-			<unitPreference regions="001">liter</unitPreference>
-			<unitPreference regions="US">gallon</unitPreference>
+			<unitPreference regions="001" unit="liter"/>
+			<unitPreference regions="US" unit="gallon"/>
 		</unitPreferences>
 	</unitPreferenceData>
 
