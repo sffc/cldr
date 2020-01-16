@@ -1344,6 +1344,9 @@ public class SupplementalDataInfo {
         private boolean handleUnitConversion(XPathParts parts) {
             final String source = parts.getAttributeValue(-1, "source");
             final String target = parts.getAttributeValue(-1, "target");
+            if (source.contentEquals(target)) {
+                throw new IllegalArgumentException("Cannot convert from something to itself " + parts);
+            }
             String factor = parts.getAttributeValue(-1, "factor");
             String offset = parts.getAttributeValue(-1, "offset");
             String reciprocal = parts.getAttributeValue(-1, "reciprocal");

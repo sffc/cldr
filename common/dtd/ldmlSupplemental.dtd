@@ -10,7 +10,7 @@ Except as contained in this notice, the name of a copyright holder shall not be 
     $Revision$
 -->
 
-<!ELEMENT supplementalData ( version, generation?, cldrVersion?, currencyData?, territoryContainment?, subdivisionContainment?, languageData?, territoryInfo?, postalCodeData?, calendarData?, calendarPreferenceData?, weekData?, timeData?, measurementData?, unitPreferenceData?, convertUnits?, timezoneData?, characters?, transforms?, metadata?, codeMappings?, parentLocales?, likelySubtags?, metazoneInfo?, plurals?, telephoneCodeData?, numberingSystems?, bcp47KeywordMappings?, gender?, references?, languageMatching?, dayPeriodRuleSet*, metaZones?, primaryZones?, windowsZones?, coverageLevels?, idValidity?, rgScope?, languageGroups?, grammaticalData? ) >
+<!ELEMENT supplementalData ( version, generation?, cldrVersion?, currencyData?, territoryContainment?, subdivisionContainment?, languageData?, territoryInfo?, postalCodeData?, calendarData?, calendarPreferenceData?, weekData?, timeData?, measurementData?, unitPreferenceData?, unitConstants*, convertUnits*, timezoneData?, characters?, transforms?, metadata?, codeMappings?, parentLocales?, likelySubtags?, metazoneInfo?, plurals?, telephoneCodeData?, numberingSystems?, bcp47KeywordMappings?, gender?, references?, languageMatching?, dayPeriodRuleSet*, metaZones?, primaryZones?, windowsZones?, coverageLevels?, idValidity?, rgScope?, languageGroups?, grammaticalData? ) >
 
 <!ELEMENT version EMPTY >
     <!--@METADATA-->
@@ -391,7 +391,18 @@ Except as contained in this notice, the name of a copyright holder shall not be 
     <!--@METADATA-->
 <!ATTLIST unitPreference alt NMTOKENS #IMPLIED >
     <!--@MATCH:literal/informal, variant-->
-    
+
+
+<!ELEMENT unitConstants ( unitConstant* ) >
+
+<!ELEMENT unitConstant EMPTY >
+<!ATTLIST unitConstant constant NMTOKEN #REQUIRED >
+	<!--@MATCH:regex/[A-Za-z][A-Za-z0-9]*-->
+<!ATTLIST unitConstant value CDATA #REQUIRED >
+    <!--@VALUE-->
+    <!--@MATCH:any-->
+
+
 <!ELEMENT convertUnits ( convertUnit* ) >
 
 <!ELEMENT convertUnit EMPTY >

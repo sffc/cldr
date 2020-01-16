@@ -1,12 +1,19 @@
 package org.unicode.cldr.unittest;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,14 +22,21 @@ import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.Rational;
+import org.unicode.cldr.util.Rational.RationalParser;
+import org.unicode.cldr.util.StandardCodes.LstrType;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo.Count;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralType;
 import org.unicode.cldr.util.UnitConverter;
 import org.unicode.cldr.util.Units;
+import org.unicode.cldr.util.Validity;
+import org.unicode.cldr.util.Validity.Status;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
 import com.ibm.icu.dev.test.TestFmwk;
 
 public class TestUnits extends TestFmwk {
@@ -273,38 +287,227 @@ public class TestUnits extends TestFmwk {
         }
         return true;
     }
+
+    static final boolean DEBUG = false;
     
     public void TestConversion() {
         UnitConverter converter = CLDRConfig.getInstance().getSupplementalDataInfo().getUnitConverter();
-        Rational actual = converter.convert(Rational.ONE, "inch", "foot");
-        assertEquals("inch to foot", Rational.of(1,12), actual);
-    }
-    
-    public void TestRational() {
-        Rational a6_10 = Rational.of(6,10);
-        Rational a3_5 = Rational.of(3,5);
-        assertEquals("", a3_5, a6_10);
+        Object[][] tests = {
+            {"foot", 12, "inch"},
+            {"gallon", 4, "quart"},
+            {"gallon", 16, "cup"},
+        };
+        for (Object[] test : tests) {
+            String sourceUnit = test[0].toString();
+            String targetUnit = test[2].toString();
+            int numerator = (Integer) test[1];
+            assertEquals(sourceUnit + " to " + targetUnit, Rational.of(numerator, 1), converter.convert(Rational.ONE, sourceUnit, targetUnit));
+        }
+
+        // test conversions are disjoint
+        Set<String> gotAlready = new HashSet<>();
+        List<Set<String>> equivClasses = new ArrayList<>();
+        Map<String,String> classToId = new TreeMap<>();
+        for (String unit : converter.canConvert()) {
+            if (gotAlready.contains(unit)) {
+                continue;
+            }
+            Set<String> set = converter.canConvertBetween(unit);
+            final String id = "ID" + equivClasses.size();
+            equivClasses.add(set);
+            gotAlready.addAll(set);
+            for (String s : set) {
+                classToId.put(s, id);
+            }
+        }
+
+        // check not overlapping
+        for (int i = 0; i < equivClasses.size(); ++i) {
+            Set<String> eclass1 = equivClasses.get(i);
+            for (int j = i+1; j < equivClasses.size(); ++j) {
+                Set<String> eclass2 = equivClasses.get(j);
+                if (!Collections.disjoint(eclass1, eclass2)) {
+                    errln("Overlapping equivalence classes: " + eclass1 + " ~ " + eclass2 + "\n\tProbably bad chain requiring 3 steps.");
+                }
+            }
+            
+            // check that all elements of an equivalence class have the same type
+            Multimap<String,String> breakdown = TreeMultimap.create();
+            for (String item : eclass1) {
+                String type = CORE_TO_TYPE.get(item);
+                if (type == null) {
+                    type = "?";
+                }
+                breakdown.put(type, item);
+            }
+            if (DEBUG) System.out.println("type to item: " + breakdown);
+            if (breakdown.keySet().size() != 1) {
+                errln("mixed categories: " + breakdown);
+            }
+            
+        }
         
+        // check that all units with the same type have the same equivalence class
+        for (Entry<String, Collection<String>> entry : TYPE_TO_CORE.asMap().entrySet()) {
+            Multimap<String,String> breakdown = TreeMultimap.create();
+            for (String item : entry.getValue()) {
+                String id = classToId.get(item);
+                if (id == null) {
+                    continue;
+                }
+                breakdown.put(id, item);
+            }
+            if (DEBUG) System.out.println(entry.getKey() + " id to item: " + breakdown);
+            if (breakdown.keySet().size() != 1) {
+                errln(entry.getKey() + " mixed categories: " + breakdown);
+            }
+        }
+    }
+
+    public void TestRational() {
+        Rational a3_5 = Rational.of(3,5);
+
+        Rational a6_10 = Rational.of(6,10);
+        assertEquals("", a3_5, a6_10);
+
         Rational a5_3 = Rational.of(5,3);
         assertEquals("", a3_5, a5_3.reciprocal());
-        
+
         assertEquals("", Rational.ONE, a3_5.multiply(a3_5.reciprocal()));
         assertEquals("", Rational.ZERO, a3_5.add(a3_5.negate()));
 
         assertEquals("", Rational.INFINITY, Rational.ZERO.reciprocal());
         assertEquals("", Rational.NEGATIVE_INFINITY, Rational.INFINITY.negate());
         assertEquals("", Rational.NEGATIVE_ONE, Rational.ONE.negate());
-        
+
         assertEquals("", Rational.NaN, Rational.ZERO.divide(Rational.ZERO));
-        
+
         assertEquals("", BigDecimal.valueOf(2), Rational.of(2,1).toBigDecimal());
         assertEquals("", BigDecimal.valueOf(0.5), Rational.of(1,2).toBigDecimal());
-        
+
         assertEquals("", BigDecimal.valueOf(100), Rational.of(100,1).toBigDecimal());
         assertEquals("", BigDecimal.valueOf(0.01), Rational.of(1,100).toBigDecimal());
 
         assertEquals("", Rational.of(12370,1), Rational.of(BigDecimal.valueOf(12370)));
         assertEquals("", Rational.of(1237,10), Rational.of(BigDecimal.valueOf(1237.0/10)));
         assertEquals("", Rational.of(1237,10000), Rational.of(BigDecimal.valueOf(1237.0/10000)));
+    }
+
+    public void TestRationalParse() {
+        RationalParser plainParser = new Rational.RationalParser(ImmutableMap.of(
+            "f2m", Rational.of(new BigDecimal("0.3048"))));
+
+        Rational.RationalParser parser = new Rational.RationalParser(ImmutableMap.of(
+            "f2m", Rational.of(new BigDecimal("0.3048")),
+            "lb2kg", Rational.of(new BigDecimal("0.45359237")),
+            "gravity", Rational.of(new BigDecimal("9.80665")),
+            "PI", Rational.of(new BigDecimal("3.1415926535897932384626433832795")),
+            "cup2m3", plainParser.parse("231*f2m*f2m*f2m/16*12*12*12")
+            // cup = 1/16 gallon
+            //     = 231/16 inch3
+            //     = 231/(16*12*12*12) ft3
+            //     = 231*f2m*f2m*f2m/(16*12*12*12) m3
+            ));
+
+        Rational a3_5 = Rational.of(3,5);
+
+        assertEquals("", a3_5, parser.parse("6/10"));
+
+        assertEquals("", a3_5, parser.parse("0.06/0.10"));
+
+        assertEquals("", Rational.of(381, 1250), parser.parse("f2m"));
+        assertEquals("", 6.02214076E+23d, parser.parse("6.02214076E+23").toBigDecimal().doubleValue());
+        Rational temp = parser.parse("cup2m3");
+        //System.out.println(" " + temp);
+        assertEquals("", 2.365882365E-4d, temp.numerator.doubleValue()/temp.denominator.doubleValue());
+
+    }
+
+
+    static final Map<String,String> CORE_TO_TYPE;
+    static final Multimap<String,String> TYPE_TO_CORE;
+    static {
+        Map<Status, Set<String>> statusToCodes = Validity.getInstance().getStatusToCodes(LstrType.unit);
+        Set<String> regular = statusToCodes.get(Status.regular);
+
+        Map<String, String> coreToType = new TreeMap<>();
+        TreeMultimap<String, String> typeToCore = TreeMultimap.create();
+        for (String s : regular) {
+            int dashPos = s.indexOf('-');
+            String unitType = s.substring(0,dashPos);
+            String coreUnit = s.substring(dashPos+1);
+            coreToType.put(coreUnit, unitType);
+            typeToCore.put(unitType, coreUnit);
+        }
+        CORE_TO_TYPE = ImmutableMap.copyOf(coreToType);
+        TYPE_TO_CORE = ImmutableMultimap.copyOf(typeToCore);
+    }
+
+    public void TestUnitCategory() {
+        Matcher prefixes = Pattern.compile(
+            "yotta|zetta|exa|peta|tera|giga|mega|kilo|hecto|deka|deci|centi|milli|micro|nano|pico|femto|atto|zepto|yocto")
+            .matcher("");
+        final ImmutableSet<String> operators = ImmutableSet.of("square", "squared", "cubic", "cubed", "per");
+
+        Matcher prefixesAndOperators = Pattern.compile(
+            "-?(yotta|zetta|exa|peta|tera|giga|mega|kilo|hecto|deka|deci|centi|milli|micro|nano|pico|femto|atto|zepto|yocto)"
+                + "|square-|-squared|cubic-|-cubed|per-").matcher("");
+        Map<Status, Set<String>> statusToCodes = Validity.getInstance().getStatusToCodes(LstrType.unit);
+
+        Map<String,String> unitToType = new TreeMap<>();
+        TreeMultimap<String, String> typeToCore = TreeMultimap.create();
+        Set<String> regular = statusToCodes.get(Status.regular);
+        for (String s : regular) {
+            int dashPos = s.indexOf('-');
+            String unitType = s.substring(0,dashPos);
+            String coreUnit = s.substring(dashPos+1);
+            typeToCore.put(unitType, coreUnit);
+
+            // break down units
+            if (prefixesAndOperators.reset(coreUnit).find()) {
+                unitToType.put(coreUnit, "composed");
+//            } else if (coreUnit.contains("-")) {
+//                unitToType.put(coreUnit, "simpleHyphen");
+            } else {
+                unitToType.put(coreUnit, "simple");
+            }
+        }
+        System.out.println();
+        Set<String> oddities = new TreeSet<>();
+        for (Entry<String, String> entry : typeToCore.entries()) {
+            final String coreUnit = entry.getValue();
+            final String unitType = entry.getKey();
+            final String type2 = unitToType.get(coreUnit);
+            System.out.println(
+                unitType 
+                + "\t " + coreUnit
+                + "\t" + type2);
+            String[] parts = coreUnit.split("-");
+
+            if ("composed".equals(type2)) {
+                for (String part : parts) {
+                    if (prefixes.reset(part).lookingAt()) {
+                        continue;
+                    }
+                    if (operators.contains(part)) {
+                        continue;
+                    }
+                    if ("simple".equals(unitToType.get(part))) {
+                        continue;
+                    }
+                    oddities.add(part);
+                }
+            }
+        }
+        System.out.println("oddities: " + oddities);
+
+        UnitConverter converter = CLDRConfig.getInstance().getSupplementalDataInfo().getUnitConverter();
+        Set<String> canConvert = new TreeSet<>(converter.canConvert());
+        Set<String> cores = new TreeSet<>(typeToCore.values());
+
+        cores.removeAll(canConvert);
+        assertEquals("Units we can't convert", Collections.EMPTY_SET, cores);
+        canConvert.removeAll(typeToCore.values());
+        assertEquals("Conversions for invalid units", Collections.EMPTY_SET, canConvert);
     }
 }
