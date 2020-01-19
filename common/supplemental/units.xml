@@ -9,15 +9,17 @@ For terms of use, see http://www.unicode.org/copyright.html
 <supplementalData>
 	<version number="$Revision$"/>
 	<unitConstants>
-		<unitConstant constant="f2m" value="0.3048"/>
+		<unitConstant constant="ft2m" value="0.3048"/>
 		<unitConstant constant="lb2kg" value="0.45359237"/>
 		<unitConstant constant="gravity" value="9.80665"/>
 		<unitConstant constant="PI" value="3.1415926535897932384626433832795"/>
-		<unitConstant constant="cup2m3" value="231*f2m*f2m*f2m/16*12*12*12"/>
+		<unitConstant constant="cup2m3" value="231*ft2m*ft2m*ft2m/16*12*12*12"/>
+		<unitConstant constant="G" value="6.67408E-11"/>   <!-- https://arxiv.org/abs/1510.07674 -->
 	</unitConstants>
+		<!-- Values where possible from NIST Special Publication 1038 
+		https://www.govinfo.gov/content/pkg/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4/pdf/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4.pdf -->
 	<convertUnits>
 		<convertUnit source='atmosphere' target='kilogram-per-meter-square-second' factor='101325'/>
-		<convertUnit source='one' target='1' factor='1'/>
 		<convertUnit source='byte' target='bit' factor='8'/>
 		<convertUnit source='day' target='second' factor='86400'/>
 		<convertUnit source='day-person' target='second' factor='86400'/>
@@ -43,16 +45,16 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='foodcalorie' target='kilogram-square-meter-per-square-second' factor='4184'/>
 		<convertUnit source='hertz' target='one-per-second' factor='1'/>
 		<convertUnit source='astronomical-unit' target='meter' factor='149597900000'/>
-		<convertUnit source='acre' target='square-meter' factor='f2m^2 * 43560'/>
+		<convertUnit source='acre' target='square-meter' factor='ft2m^2 * 43560'/>
 		<convertUnit source='therm-us' target='kilogram-square-meter-per-square-second' factor='105506000'/>
 		<convertUnit source='pound-force' target='kilogram-meter-per-square-second' factor='lb2kg * gravity'/>
-		<convertUnit source='fathom' target='meter' factor='f2m * 6'/>
-		<convertUnit source='foot' target='meter' factor='f2m'/>
-		<convertUnit source='furlong' target='meter' factor='f2m*660'/>
-		<convertUnit source='inch' target='meter' factor='f2m/12'/>
-		<convertUnit source='mile' target='meter' factor='f2m*5280'/>
+		<convertUnit source='fathom' target='meter' factor='ft2m * 6'/>
+		<convertUnit source='foot' target='meter' factor='ft2m'/>
+		<convertUnit source='furlong' target='meter' factor='ft2m*660'/>
+		<convertUnit source='inch' target='meter' factor='ft2m/12'/>
+		<convertUnit source='mile' target='meter' factor='ft2m*5280'/>
 		<convertUnit source='nautical-mile' target='meter' factor='1852'/>
-		<convertUnit source='yard' target='meter' factor='f2m*3'/>
+		<convertUnit source='yard' target='meter' factor='ft2m*3'/>
 		<convertUnit source='ounce' target='kilogram' factor='lb2kg/16'/>
 		<convertUnit source='ounce-troy' target='kilogram' factor='0.03110348'/>
 		<convertUnit source='pound' target='kilogram' factor='lb2kg'/>
@@ -90,7 +92,22 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='cup-metric' target='cubic-meter' factor='0.00025'/>
 		<convertUnit source='liter' target='cubic-meter' factor='0.001'/>
 		<convertUnit source='pint-metric' target='cubic-meter' factor='0.0005'/>
-		<convertUnit source='mile-per-gallon' target='liter-per-kilometer' factor='235.215' reciprocal='TRUE'/>
-		<convertUnit source='centimeter' target='meter' factor='1/100'/>
+		<convertUnit source='centimeter' target='meter' factor='1/100'/><convertUnit source='century' target='year' factor='100'/>
+		<convertUnit source='decade' target='year' factor='10'/>
+		<convertUnit source='dot' target='pixel' factor='100'/>
+		<convertUnit source='month' target='year' factor='12'/>
+		<convertUnit source='month-person' target='year' factor='12'/>
+		<convertUnit source='solar-luminosity' target='kilogram-square-meter-per-cubic-second' factor='3.828E+26'/>
+		<convertUnit source='solar-radius' target='meter' factor='1.3271244E20/G'/> <!-- https://arxiv.org/abs/1510.07674 -->
+		<convertUnit source='earth-radius' target='meter' factor='6.3781E6'/> <!-- https://arxiv.org/abs/1510.07674 -->
+		<convertUnit source='solar-mass' target='kilogram' factor='1.98847E+30'/> <!-- https://arxiv.org/abs/1510.07674 -->
+		<convertUnit source='earth-mass' target='kilogram' factor='5.9722E+24'/>  <!-- https://arxiv.org/abs/1510.07674 -->
+		<convertUnit source='year-person' target='year' factor='1'/>
+		<convertUnit source='permillion' target='one-per-one' factor='1/1000000'/>
+		<convertUnit source='meter-per-mercury' target='kilogram-per-meter-square-second' factor='10132500/760'/>
+		<convertUnit source='british-thermal-unit' target='kilogram-square-meter-per-square-second' factor='1055.06'/>
+		<convertUnit source='point' target='meter' factor='ft2m/12/72'/>
+		<convertUnit source='dalton' target='kilogram-square-meter-per-square-second' factor='1.49241808560E-10'/> <!-- https://physics.nist.gov/cgi-bin/cuu/Value?uj -->
+		<!-- em, lux, mile-per-gallon-imperial, millimeter-of-mercury, part-per-million -->
 	</convertUnits>
 </supplementalData>

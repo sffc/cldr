@@ -2,12 +2,15 @@ package org.unicode.cldr.util;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+import com.ibm.icu.util.Freezable;
 import com.ibm.icu.util.ICUException;
 
 /**
@@ -37,15 +40,18 @@ public final class Rational implements Comparable<Rational> {
     public static final Rational NaN = Rational.of(0,0);
 
 
-    public static class RationalParser {
+    public static class RationalParser implements Freezable<RationalParser>{
         private static Splitter slashSplitter = Splitter.on('/').trimResults();
         private static Splitter starSplitter = Splitter.on('*').trimResults();
 
-        public RationalParser(ImmutableMap<String, Rational> constants) {
-            this.constants = constants;
+        private Map<String,Rational> constants = new LinkedHashMap<>();
+        
+        public RationalParser addConstant(String id, String value) {
+            if (constants.put(id, parse(value)) != null) {
+                throw new IllegalArgumentException("Can't reset constant " + id + " = " + value);
+            }
+            return this;
         }
-
-        Map<String,Rational> constants;
 
         /* 
          * input = comp (/ comp)?
@@ -91,6 +97,25 @@ public final class Rational implements Comparable<Rational> {
 //                _denominator = BigInteger.ONE;
 //            }
 //            return new Rational(_numerator, _denominator);
+        }
+
+        boolean frozen = false;
+        
+        @Override
+        public boolean isFrozen() {
+            return frozen;
+        }
+
+        @Override
+        public RationalParser freeze() {
+            frozen = true;
+            constants = ImmutableMap.copyOf(constants);
+            return this;
+        }
+
+        @Override
+        public RationalParser cloneAsThawed() {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -159,8 +184,16 @@ public final class Rational implements Comparable<Rational> {
         return new Rational(numerator.negate(), denominator);
     }
 
+    public BigDecimal toBigDecimal(MathContext mathContext) {
+        return new BigDecimal(numerator).divide(new BigDecimal(denominator), mathContext);
+    }
+    
     public BigDecimal toBigDecimal() {
-        return new BigDecimal(numerator).divide(new BigDecimal(denominator));
+        return toBigDecimal(MathContext.UNLIMITED);
+    }
+    
+    public static Rational of(double value) {
+        return of(new BigDecimal(value));
     }
 
     public static Rational of(BigDecimal bigDecimal) {

@@ -37,6 +37,7 @@ import org.unicode.cldr.tool.SubdivisionNames;
 import org.unicode.cldr.util.Builder.CBuilder;
 import org.unicode.cldr.util.CldrUtility.VariableReplacer;
 import org.unicode.cldr.util.DayPeriodInfo.DayPeriod;
+import org.unicode.cldr.util.Rational.RationalParser;
 import org.unicode.cldr.util.StandardCodes.LstrType;
 import org.unicode.cldr.util.SupplementalDataInfo.BasicLanguageData.Type;
 import org.unicode.cldr.util.SupplementalDataInfo.NumberingSystemInfo.NumberingSystemType;
@@ -908,7 +909,8 @@ public class SupplementalDataInfo {
 
     public Multimap<String, String> languageGroups = TreeMultimap.create();
     
-    public UnitConverter unitConverter = new UnitConverter();
+    public RationalParser rationalParser = new RationalParser();
+    public UnitConverter unitConverter = new UnitConverter(rationalParser);
 
     public enum MeasurementType {
         measurementSystem, paperSize
@@ -1147,6 +1149,8 @@ public class SupplementalDataInfo {
         coverageLevels = Collections.unmodifiableSortedSet(coverageLevels);
 
         measurementData = CldrUtility.protectCollection(measurementData);
+        unitConverter.freeze();
+        rationalParser.freeze();
         timeData = CldrUtility.protectCollection(timeData);
 
         validityInfo = CldrUtility.protectCollection(validityInfo);
@@ -1288,6 +1292,10 @@ public class SupplementalDataInfo {
                     if (handleMeasurementData(level2, parts)) {
                         return;
                     }
+                } else if (level1.equals("unitConstants")) {
+                    if (handleUnitConstants(parts)) {
+                        return;
+                    }
                 } else if (level1.equals("convertUnits")) {
                     if (handleUnitConversion(parts)) {
                         return;
@@ -1341,7 +1349,18 @@ public class SupplementalDataInfo {
             return true;
         }
         
+        private boolean handleUnitConstants(XPathParts parts) {
+            //      <unitConstant constant="ft2m" value="0.3048"/>
+
+            final String constant = parts.getAttributeValue(-1, "constant");
+            final String value = parts.getAttributeValue(-1, "value");
+            rationalParser.addConstant(constant, value);
+            return true;
+        }
+
         private boolean handleUnitConversion(XPathParts parts) {
+            // <convertUnit source='acre' target='square-meter' factor='ft2m^2 * 43560'/>
+            
             final String source = parts.getAttributeValue(-1, "source");
             final String target = parts.getAttributeValue(-1, "target");
             if (source.contentEquals(target)) {
@@ -1355,6 +1374,7 @@ public class SupplementalDataInfo {
                 factor, offset, reciprocal);
             return true;
         }
+
 
 
         private boolean handleTimeData(XPathParts parts) {
@@ -4338,5 +4358,8 @@ public class SupplementalDataInfo {
     
     public UnitConverter getUnitConverter() {
         return unitConverter;
+    }
+    public RationalParser getRationalParser() {
+        return rationalParser;
     }
 }

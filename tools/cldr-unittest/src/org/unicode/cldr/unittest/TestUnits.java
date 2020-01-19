@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,24 +23,29 @@ import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.Rational;
-import org.unicode.cldr.util.Rational.RationalParser;
 import org.unicode.cldr.util.StandardCodes.LstrType;
+import org.unicode.cldr.util.SupplementalDataInfo;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo.Count;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralType;
 import org.unicode.cldr.util.UnitConverter;
+import org.unicode.cldr.util.UnitConverter.UnitInfo;
 import org.unicode.cldr.util.Units;
 import org.unicode.cldr.util.Validity;
 import org.unicode.cldr.util.Validity.Status;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 import com.ibm.icu.dev.test.TestFmwk;
+import com.ibm.icu.util.Output;
 
 public class TestUnits extends TestFmwk {
+    private static final SupplementalDataInfo SDI = CLDRConfig.getInstance().getSupplementalDataInfo();
+
     CLDRConfig info = CLDRConfig.getInstance();
 
     public static void main(String[] args) {
@@ -170,7 +176,7 @@ public class TestUnits extends TestFmwk {
         for (String locale : localesToTest) {
             CLDRFile file = factory.make(locale, true);
             //ExampleGenerator exampleGenerator = getExampleGenerator(locale);
-            PluralInfo pluralInfo = CLDRConfig.getInstance().getSupplementalDataInfo().getPlurals(PluralType.cardinal, locale);
+            PluralInfo pluralInfo = SDI.getPlurals(PluralType.cardinal, locale);
             final boolean isEnglish = locale.contentEquals("en");
             int errMsg = isEnglish ? ERR : WARN;
 
@@ -289,9 +295,9 @@ public class TestUnits extends TestFmwk {
     }
 
     static final boolean DEBUG = false;
-    
+
     public void TestConversion() {
-        UnitConverter converter = CLDRConfig.getInstance().getSupplementalDataInfo().getUnitConverter();
+        UnitConverter converter = SDI.getUnitConverter();
         Object[][] tests = {
             {"foot", 12, "inch"},
             {"gallon", 4, "quart"},
@@ -330,7 +336,7 @@ public class TestUnits extends TestFmwk {
                     errln("Overlapping equivalence classes: " + eclass1 + " ~ " + eclass2 + "\n\tProbably bad chain requiring 3 steps.");
                 }
             }
-            
+
             // check that all elements of an equivalence class have the same type
             Multimap<String,String> breakdown = TreeMultimap.create();
             for (String item : eclass1) {
@@ -344,9 +350,9 @@ public class TestUnits extends TestFmwk {
             if (breakdown.keySet().size() != 1) {
                 errln("mixed categories: " + breakdown);
             }
-            
+
         }
-        
+
         // check that all units with the same type have the same equivalence class
         for (Entry<String, Collection<String>> entry : TYPE_TO_CORE.asMap().entrySet()) {
             Multimap<String,String> breakdown = TreeMultimap.create();
@@ -362,6 +368,68 @@ public class TestUnits extends TestFmwk {
                 errln(entry.getKey() + " mixed categories: " + breakdown);
             }
         }
+    }
+
+    public void TestBaseUnits() {
+        UnitConverter converter = SDI.getUnitConverter();
+        Splitter barSplitter = Splitter.on('-');
+        ImmutableSet<String> allowedInBase = ImmutableSet.of(
+            "second", "meter","kilogram", "ampere", "celsius", // kelvin
+            "mole", "candela", 
+            "per", "square", "cubic", 
+            "one", "bit", "degree", // instead of radian
+            "year", "pixel", "em"
+            );
+        for (String unit : converter.baseUnits()) {
+            for (String piece : barSplitter.split(unit)) {
+                assertTrue(unit + ": " + piece + " in " + allowedInBase, allowedInBase.contains(piece));
+            }
+        }
+    }
+
+    public void TestParseUnit() {
+        UnitConverter converter = SDI.getUnitConverter();
+        Output<String> compoundBaseUnit = new Output<>();
+        String[][] tests = {
+            {"kilometer-pound-per-hour", "meter-kilogram-per-second", "45359237/360000000"},
+            {"kilometer-per-hour", "meter-per-second", "5/18"},
+        };
+        for (String[] test : tests) {
+            String source = test[0];
+            String expectedUnit = test[1];
+            Rational expectedRational = new Rational.RationalParser().parse(test[2]);
+            UnitInfo unitInfo = converter.parseUnitId(source, compoundBaseUnit);
+            assertEquals(source, expectedUnit, compoundBaseUnit.value);
+            assertEquals(source, expectedRational, unitInfo.factor);
+        }
+
+        // check all 
+        System.out.println();
+        Set<String> badUnits = new LinkedHashSet<>();
+        for (String unit : CORE_TO_TYPE.keySet()) {
+            if (unit.equals("generic")) {
+                continue;
+            }
+            if (unit.contentEquals("cubic-centimeter")) {
+                int debug = 0;
+            }
+            if (converter.isBaseUnit(unit)) {
+                System.out.println(unit + "\tBASE");
+            } else {
+                UnitInfo unitInfo = converter.getUnitInfo(unit, compoundBaseUnit);
+                if (unitInfo == null) {
+                    unitInfo = converter.parseUnitId(unit, compoundBaseUnit);
+                }
+                if (unitInfo == null) {
+                    badUnits.add(unit);
+                } else {
+                System.out.println(unit
+                    + "\t" + compoundBaseUnit
+                    + "\t" + unitInfo);
+                }
+            }
+        }
+        assertEquals("Unconvertable units", Collections.emptySet(), badUnits);
     }
 
     public void TestRational() {
@@ -394,20 +462,7 @@ public class TestUnits extends TestFmwk {
     }
 
     public void TestRationalParse() {
-        RationalParser plainParser = new Rational.RationalParser(ImmutableMap.of(
-            "f2m", Rational.of(new BigDecimal("0.3048"))));
-
-        Rational.RationalParser parser = new Rational.RationalParser(ImmutableMap.of(
-            "f2m", Rational.of(new BigDecimal("0.3048")),
-            "lb2kg", Rational.of(new BigDecimal("0.45359237")),
-            "gravity", Rational.of(new BigDecimal("9.80665")),
-            "PI", Rational.of(new BigDecimal("3.1415926535897932384626433832795")),
-            "cup2m3", plainParser.parse("231*f2m*f2m*f2m/16*12*12*12")
-            // cup = 1/16 gallon
-            //     = 231/16 inch3
-            //     = 231/(16*12*12*12) ft3
-            //     = 231*f2m*f2m*f2m/(16*12*12*12) m3
-            ));
+        Rational.RationalParser parser = SDI.getRationalParser();
 
         Rational a3_5 = Rational.of(3,5);
 
@@ -415,7 +470,7 @@ public class TestUnits extends TestFmwk {
 
         assertEquals("", a3_5, parser.parse("0.06/0.10"));
 
-        assertEquals("", Rational.of(381, 1250), parser.parse("f2m"));
+        assertEquals("", Rational.of(381, 1250), parser.parse("ft2m"));
         assertEquals("", 6.02214076E+23d, parser.parse("6.02214076E+23").toBigDecimal().doubleValue());
         Rational temp = parser.parse("cup2m3");
         //System.out.println(" " + temp);
@@ -426,13 +481,13 @@ public class TestUnits extends TestFmwk {
 
     static final Map<String,String> CORE_TO_TYPE;
     static final Multimap<String,String> TYPE_TO_CORE;
+    static final Set<String> VALID_UNITS;
     static {
-        Map<Status, Set<String>> statusToCodes = Validity.getInstance().getStatusToCodes(LstrType.unit);
-        Set<String> regular = statusToCodes.get(Status.regular);
+        VALID_UNITS = Validity.getInstance().getStatusToCodes(LstrType.unit).get(Status.regular);
 
         Map<String, String> coreToType = new TreeMap<>();
         TreeMultimap<String, String> typeToCore = TreeMultimap.create();
-        for (String s : regular) {
+        for (String s : VALID_UNITS) {
             int dashPos = s.indexOf('-');
             String unitType = s.substring(0,dashPos);
             String coreUnit = s.substring(dashPos+1);
@@ -501,11 +556,12 @@ public class TestUnits extends TestFmwk {
         }
         System.out.println("oddities: " + oddities);
 
-        UnitConverter converter = CLDRConfig.getInstance().getSupplementalDataInfo().getUnitConverter();
+        UnitConverter converter = SDI.getUnitConverter();
         Set<String> canConvert = new TreeSet<>(converter.canConvert());
         Set<String> cores = new TreeSet<>(typeToCore.values());
 
         cores.removeAll(canConvert);
+        cores.removeAll(converter.baseUnits());
         assertEquals("Units we can't convert", Collections.EMPTY_SET, cores);
         canConvert.removeAll(typeToCore.values());
         assertEquals("Conversions for invalid units", Collections.EMPTY_SET, canConvert);
