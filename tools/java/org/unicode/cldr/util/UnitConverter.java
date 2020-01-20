@@ -1,7 +1,10 @@
 package org.unicode.cldr.util;
 
+import java.math.MathContext;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,12 +15,58 @@ import java.util.TreeSet;
 import org.unicode.cldr.util.Rational.RationalParser;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
 import com.ibm.icu.util.Freezable;
 import com.ibm.icu.util.Output;
 
 public class UnitConverter implements Freezable<UnitConverter> {
+
+    static final Splitter BAR_SPLITTER = Splitter.on('-');
+
+    final RationalParser rationalParser;
+
+    Map<String, Map<String,UnitInfo>> sourceToTargetToInfo = new TreeMap<>();
+    Map<String, String> toBaseUnit = new TreeMap<>();
+    Set<String> baseUnits;
+    Multimap<String, Continuation> continuations = TreeMultimap.create();
+
+    private boolean frozen = false;
+
+    @Override
+    public boolean isFrozen() {
+        return frozen;
+    }
+
+    @Override
+    public UnitConverter freeze() {
+        frozen = true;
+        rationalParser.freeze();
+        sourceToTargetToInfo = ImmutableMap.copyOf(sourceToTargetToInfo);
+        toBaseUnit = ImmutableMap.copyOf(toBaseUnit);
+        baseUnits = ImmutableSet.<String>builder()
+            .add("second", 
+                "meter", 
+                "kilogram", 
+                "ampere", 
+                "celsius",
+                "mole", 
+                "candela")
+            .addAll(toBaseUnit.values())
+            .build();
+        continuations = ImmutableMultimap.copyOf(continuations);
+        return this;
+    }
+
+    @Override
+    public UnitConverter cloneAsThawed() {
+        throw new UnsupportedOperationException();
+    }
+
 
     public static final class UnitInfo {
         public final Rational factor;
@@ -49,15 +98,107 @@ public class UnitConverter implements Freezable<UnitConverter> {
 
         @Override
         public String toString() {
-            return factor + (reciprocal ? " / x" : " * x") + (offset == Rational.ZERO ? "" : offset);
+            return factor 
+                + (reciprocal ? " / x" : " * x") 
+            + (offset.equals(Rational.ZERO) ? "" : 
+                (offset.compareTo(Rational.ZERO) < 0 ? " - " : " - ")
+                + offset.abs());
+        }
+
+        public String toDecimal() {
+            return factor.toBigDecimal(MathContext.DECIMAL64) 
+                + (reciprocal ? " / x" : " * x") 
+                + (offset.equals(Rational.ZERO) ? "" : 
+                    (offset.compareTo(Rational.ZERO) < 0 ? " - " : " - ")
+                    + offset.toBigDecimal(MathContext.DECIMAL64).abs());
         }
     }
 
-    final RationalParser rationalParser;
+    static class Continuation implements Comparable<Continuation> {
+        public final List<String> remainder;
+        public final String result;
 
-    Map<String, Map<String,UnitInfo>> sourceToTargetToInfo = new TreeMap<>();
-    Map<String, String> toBaseUnit = new TreeMap<>();
-    Set<String> baseUnits;
+        public static void addIfNeeded(String source, Multimap<String, Continuation> data) {
+            List<String> sourceParts = BAR_SPLITTER.splitToList(source);
+            if (sourceParts.size() > 1) {
+                Continuation continuation = new Continuation(ImmutableList.copyOf(sourceParts.subList(1, sourceParts.size())), source);
+                data.put(sourceParts.get(0), continuation);
+            }
+        }
+        private Continuation(List<String> remainder, String source) {
+            this.remainder = remainder;
+            this.result = source;
+        }
+        /**
+         * The ordering is designed to have longest continuation first so that matching works.
+         * Otherwise the ordering doesn't matter, so we just use the result.
+         */
+        @Override
+        public int compareTo(Continuation other) {
+            int diff = other.remainder.size() - remainder.size();
+            if (diff < 0) {
+                return diff;
+            }
+            return result.compareTo(other.result);
+        }
+
+        public boolean match(List<String> parts, final int startIndex) {
+            if (remainder.size() > parts.size() - startIndex) {
+                return false;
+            }
+            int i = startIndex;
+            for (String unitPart : remainder) {
+                if (!unitPart.equals(parts.get(i++))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return remainder + " 🢣 " + result;
+        }
+
+        public static Iterable<String> split(String derivedUnit, Multimap<String, Continuation> continuations) {
+            return new UnitIterator(derivedUnit, continuations);
+        }
+
+        public static class UnitIterator implements Iterable<String>, Iterator<String> {
+            final List<String> parts;
+            final Multimap<String, Continuation> continuations;
+            int nextIndex = 0;
+
+            public UnitIterator(String derivedUnit, Multimap<String, Continuation> continuations) {
+                parts = BAR_SPLITTER.splitToList(derivedUnit);
+                this.continuations = continuations;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < parts.size();
+            }
+
+            @Override
+            public String next() {
+                String result = parts.get(nextIndex++);
+                Collection<Continuation> continuationOptions = continuations.get(result);
+                for (Continuation option : continuationOptions) {
+                    if (option.match(parts, nextIndex)) {
+                        nextIndex += option.remainder.size();
+                        return option.result;
+                    }
+                }
+                return result;
+            }
+
+            @Override
+            public Iterator<String> iterator() {
+                return this;
+            }
+
+        }
+    }
 
     public UnitConverter(RationalParser rationalParser) {
         this.rationalParser = rationalParser;
@@ -72,6 +213,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
         addToSourceToTarget(source, target, info);
         addToSourceToTarget(target, source, info.invert());
         toBaseUnit.put(source, target);
+        Continuation.addIfNeeded(source, continuations);
     }
 
     private void addToSourceToTarget(String source, String target, UnitInfo info) {
@@ -151,41 +293,9 @@ public class UnitConverter implements Freezable<UnitConverter> {
         return data.getValue();
     }
 
-    private boolean frozen = false;
-
-    @Override
-    public boolean isFrozen() {
-        return frozen;
-    }
-
-    @Override
-    public UnitConverter freeze() {
-        frozen = true;
-        rationalParser.freeze();
-        sourceToTargetToInfo = ImmutableMap.copyOf(sourceToTargetToInfo);
-        toBaseUnit = ImmutableMap.copyOf(toBaseUnit);
-        baseUnits = ImmutableSet.<String>builder()
-            .add("second", 
-                "meter", 
-                "kilogram", 
-                "ampere", 
-                "celsius",
-                "mole", 
-                "candela")
-            .addAll(toBaseUnit.values())
-            .build();
-        return this;
-    }
-
-    @Override
-    public UnitConverter cloneAsThawed() {
-        throw new UnsupportedOperationException();
-    }
-
-    static final Splitter BAR_SPLITTER = Splitter.on('-');
     static final ImmutableMap<String, String> FIX_DENORMALIZED = ImmutableMap.of(
-        "-second-squared", "-square-second",
-        "100kilometers", "100-kilometer");
+        "meter-per-second-squared", "meter-per-square-second",
+        "liter-per-100kilometers", "liter-per-100-kilometers");
 
     /**
      * Takes a derived unit id, and produces the equivalent derived base unit id and UnitInfo to convert to it
@@ -193,19 +303,9 @@ public class UnitConverter implements Freezable<UnitConverter> {
      *
      */
     public UnitInfo parseUnitId (String derivedUnit, Output<String> metricUnit) {
-        for (Entry<String, String> entry : FIX_DENORMALIZED.entrySet()) {
-            String old = entry.getKey();
-            String fixed = entry.getValue();
-            int index = derivedUnit.indexOf(old);
-            if (index >= 0) {
-                derivedUnit = derivedUnit.substring(0,index) + fixed + derivedUnit.substring(index + old.length());
-            }
-        }
-
-        List<String> parts = BAR_SPLITTER.splitToList(derivedUnit);
-        StringBuilder outputUnit = new StringBuilder();
         metricUnit.value = null;
 
+        StringBuilder outputUnit = new StringBuilder();
         Rational numerator = Rational.ONE;
         Rational denominator = Rational.ONE;
         boolean inNumerator = true;
@@ -213,10 +313,15 @@ public class UnitConverter implements Freezable<UnitConverter> {
 
         Output<Rational> deprefix = new Output<>();
 
+        for (Entry<String, String> entry : FIX_DENORMALIZED.entrySet()) {
+            String old = entry.getKey();
+            if (old.contentEquals(derivedUnit)) {
+                derivedUnit = entry.getValue();
+            }
+        }
 
-        for (int i = 0; i < parts.size(); ++i) {
-            // TODO add compound units
-            String unit = parts.get(i);
+        for (String unit : Continuation.split(derivedUnit, continuations)) {
+
             if (unit.equals("square")) { // TODO pow4
                 power = 2;
                 if (outputUnit.length() != 0) {
@@ -275,6 +380,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
                     }
                 }
             }
+            // create cleaned up target unitid
             if (outputUnit.length() != 0) {
                 outputUnit.append('-');
             }
@@ -294,26 +400,26 @@ public class UnitConverter implements Freezable<UnitConverter> {
 
     // TODO change to TRIE if the performance isn't good enough, or restructure with regex
     static final ImmutableMap<String, Rational> PREFIXES = ImmutableMap.<String, Rational>builder()
-        .put("yocto", Rational.of(1E-24))
-        .put("zepto", Rational.of(1E-21))
-        .put("atto", Rational.of(1E-18))
-        .put("femto", Rational.of(1E-15))
-        .put("pico", Rational.of(1E-12))
-        .put("nano", Rational.of(0.000000001))
-        .put("micro", Rational.of(0.000001))
-        .put("milli", Rational.of(0.001))
-        .put("centi", Rational.of(0.01))
-        .put("deci", Rational.of(0.1))
-        .put("deka", Rational.of(10))
-        .put("hecto", Rational.of(100))
-        .put("kilo", Rational.of(1000))
-        .put("mega", Rational.of(1000000))
-        .put("giga", Rational.of(1000000000))
-        .put("tera", Rational.of(1000000000000l))
-        .put("peta", Rational.of(1000000000000000l))
-        .put("exa", Rational.of(1000000000000000000l))
-        .put("zetta", Rational.of(1E+21))
-        .put("yotta", Rational.of(1E+24))        
+        .put("yocto", Rational.pow10(-24))
+        .put("zepto", Rational.pow10(-21))
+        .put("atto", Rational.pow10(-18))
+        .put("femto", Rational.pow10(-15))
+        .put("pico", Rational.pow10(-12))
+        .put("nano", Rational.pow10(-9))
+        .put("micro", Rational.pow10(-6))
+        .put("milli", Rational.pow10(-3))
+        .put("centi", Rational.pow10(-2))
+        .put("deci", Rational.pow10(-1))
+        .put("deka", Rational.pow10(1))
+        .put("hecto", Rational.pow10(2))
+        .put("kilo", Rational.pow10(3))
+        .put("mega", Rational.pow10(6))
+        .put("giga", Rational.pow10(9))
+        .put("tera", Rational.pow10(12))
+        .put("peta", Rational.pow10(15))
+        .put("exa", Rational.pow10(18))
+        .put("zetta", Rational.pow10(21))
+        .put("yotta", Rational.pow10(24))        
         .build();
 
     private String stripPrefix(String unit, Output<Rational> deprefix) {

@@ -106,7 +106,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='permillion' target='one-per-one' factor='1/1000000'/>
 		<convertUnit source='meter-per-mercury' target='kilogram-per-meter-square-second' factor='10132500/760'/>
 		<convertUnit source='british-thermal-unit' target='kilogram-square-meter-per-square-second' factor='1055.06'/>
-		<convertUnit source='point' target='meter' factor='ft2m/12/72'/>
+		<convertUnit source='point' target='meter' factor='ft2m/864'/>
 		<convertUnit source='dalton' target='kilogram-square-meter-per-square-second' factor='1.49241808560E-10'/> <!-- https://physics.nist.gov/cgi-bin/cuu/Value?uj -->
 		<!-- em, lux, mile-per-gallon-imperial, millimeter-of-mercury, part-per-million -->
 	</convertUnits>

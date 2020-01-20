@@ -1,6 +1,7 @@
 package org.unicode.cldr.unittest;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -406,30 +407,48 @@ public class TestUnits extends TestFmwk {
         // check all 
         System.out.println();
         Set<String> badUnits = new LinkedHashSet<>();
-        for (String unit : CORE_TO_TYPE.keySet()) {
-            if (unit.equals("generic")) {
-                continue;
-            }
-            if (unit.contentEquals("cubic-centimeter")) {
-                int debug = 0;
-            }
-            if (converter.isBaseUnit(unit)) {
-                System.out.println(unit + "\tBASE");
-            } else {
-                UnitInfo unitInfo = converter.getUnitInfo(unit, compoundBaseUnit);
-                if (unitInfo == null) {
-                    unitInfo = converter.parseUnitId(unit, compoundBaseUnit);
-                }
-                if (unitInfo == null) {
-                    badUnits.add(unit);
-                } else {
-                System.out.println(unit
-                    + "\t" + compoundBaseUnit
-                    + "\t" + unitInfo);
-                }
-            }
+        
+        // checkUnitConvertability(converter, compoundBaseUnit, badUnits, "pint-metric-per-second");
+
+        for (Entry<String, String> entry : TYPE_TO_CORE.entries()) {
+            String type = entry.getKey();
+            String unit = entry.getValue();
+            checkUnitConvertability(converter, compoundBaseUnit, badUnits, type, unit);
         }
         assertEquals("Unconvertable units", Collections.emptySet(), badUnits);
+    }
+
+    private void checkUnitConvertability(UnitConverter converter, Output<String> compoundBaseUnit, 
+        Set<String> badUnits, String type, String unit) {
+        if (unit.equals("generic")) {
+            return;
+        }
+        if (unit.equals("milliampere")) {
+            int debug = 0;
+        }
+        if (converter.isBaseUnit(unit)) {
+            System.out.println(type 
+                + "\t" + unit
+                + "\t" + unit);
+        } else {
+            UnitInfo unitInfo = converter.getUnitInfo(unit, compoundBaseUnit);
+            if (unitInfo == null) {
+                unitInfo = converter.parseUnitId(unit, compoundBaseUnit);
+            }
+            if (unitInfo == null) {
+                badUnits.add(unit);
+            } else {
+            System.out.println(
+                type 
+                + "\t" + unit
+                + "\t" + compoundBaseUnit
+                + "\t" + unitInfo.factor.toBigDecimal(MathContext.DECIMAL32)
+                + "\t" + unitInfo.factor.reciprocal().toBigDecimal(MathContext.DECIMAL32)
+                + "\t" + unitInfo.toDecimal()
+                + "\t" + unitInfo
+                );
+            }
+        }
     }
 
     public void TestRational() {

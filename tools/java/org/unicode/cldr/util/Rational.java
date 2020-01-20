@@ -33,12 +33,14 @@ public final class Rational implements Comparable<Rational> {
 
     public static final Rational ZERO = Rational.of(0);
     public static final Rational ONE = Rational.of(1);
-    public static final Rational NEGATIVE_ONE = Rational.of(-1);
+    public static final Rational NEGATIVE_ONE = ONE.negate();
 
     public static final Rational INFINITY = Rational.of(1,0);
-    public static final Rational NEGATIVE_INFINITY = Rational.of(-1,0);
+    public static final Rational NEGATIVE_INFINITY = INFINITY.negate();
     public static final Rational NaN = Rational.of(0,0);
 
+    public static final Rational TEN = Rational.of(10, 1);
+    public static final Rational TENTH = TEN.reciprocal();
 
     public static class RationalParser implements Freezable<RationalParser>{
         private static Splitter slashSplitter = Splitter.on('/').trimResults();
@@ -171,6 +173,14 @@ public final class Rational implements Comparable<Rational> {
 
         return new Rational(smallNum.multiply(smallONum), smallDen.multiply(smallODen));
     }
+    
+    public Rational pow(int i) {
+        return new Rational(numerator.pow(i), denominator.pow(i));
+    }
+    
+    public static Rational pow10(int i) {
+        return i > 0 ? TEN.pow(i) : TENTH.pow(-i);
+    }
 
     public Rational divide(Rational other) {
         return multiply(other.reciprocal());
@@ -192,10 +202,6 @@ public final class Rational implements Comparable<Rational> {
         return toBigDecimal(MathContext.UNLIMITED);
     }
     
-    public static Rational of(double value) {
-        return of(new BigDecimal(value));
-    }
-
     public static Rational of(BigDecimal bigDecimal) {
         // scale()
         // If zero or positive, the scale is the number of digits to the right of the decimal point. 
@@ -215,7 +221,7 @@ public final class Rational implements Comparable<Rational> {
     @Override
     public String toString() {
         // could also return as "exact" decimal, if only factors of the denominator are 2 and 5
-        return numerator + (denominator.equals(BigInteger.ONE) ? "" : "/" + denominator);
+        return numerator + (denominator.equals(BigInteger.ONE) ? "" : " / " + denominator);
     }
 
     @Override
@@ -237,4 +243,7 @@ public final class Rational implements Comparable<Rational> {
         return Objects.hash(numerator, denominator);
     }
 
+    public Rational abs() {
+        return numerator.signum() >= 0 ? this : this.negate();
+    }
 }
