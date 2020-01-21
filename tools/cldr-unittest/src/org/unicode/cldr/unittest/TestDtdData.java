@@ -504,7 +504,7 @@ public class TestDtdData extends TestFmwk {
                 || elementName.equals("unitPreferences")
                     && (attribute.equals("category") || attribute.equals("usage") || attribute.equals("scope"))
                 || elementName.equals("unitPreference")
-                    && attribute.equals("regions")
+                    && (attribute.equals("regions") || attribute.equals("unit") || attribute.equals("geq") || attribute.equals("skeleton"))
                 || elementName.equals("distinguishingItems")
                     && attribute.equals("attributes")
                 || elementName.equals("codesByTerritory")

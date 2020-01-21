@@ -378,13 +378,17 @@ Except as contained in this notice, the name of a copyright holder shall not be 
 <!ELEMENT unitPreferences ( unitPreference* ) >
 <!ATTLIST unitPreferences category NMTOKEN #REQUIRED >
 	<!--@MATCH:literal/area, concentr, consumption, duration, energy, length, mass, pressure, speed, temperature, volume-->
-<!ATTLIST unitPreferences usage NMTOKENS #REQUIRED >
+<!ATTLIST unitPreferences usage NMTOKENS #IMPLIED >
 	<!--@MATCH:literal/baromtrc, blood-glucose, food, land-agricult, land-commercl, land-residntl, music-track, person, person-age, person-usage, rainfall, road, road-travel, snowfall, tv-program, vehicle, vehicle-fuel, visiblty, weather, wind-->
 <!ATTLIST unitPreferences scope (small) #IMPLIED >
 
 <!ELEMENT unitPreference ( #PCDATA ) >
 <!ATTLIST unitPreference regions NMTOKENS #REQUIRED >
 	<!--@MATCH:set/validity/region-->
+<!-- TODO(hugovdm): would like to s/#IMPLIED/#REQUIRED/ on "unit" below. Is this allowed? -->
+<!ATTLIST unitPreference unit CDATA #IMPLIED >
+<!ATTLIST unitPreference geq NMTOKENS #IMPLIED >
+<!ATTLIST unitPreference skeleton CDATA #IMPLIED >
 <!ATTLIST unitPreference draft (approved | contributed | provisional | unconfirmed) #IMPLIED >
     <!--@METADATA-->
 <!ATTLIST unitPreference references CDATA #IMPLIED >
