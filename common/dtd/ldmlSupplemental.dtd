@@ -10,7 +10,7 @@ Except as contained in this notice, the name of a copyright holder shall not be 
     $Revision$
 -->
 
-<!ELEMENT supplementalData ( version, generation?, cldrVersion?, currencyData?, territoryContainment?, subdivisionContainment?, languageData?, territoryInfo?, postalCodeData?, calendarData?, calendarPreferenceData?, weekData?, timeData?, measurementData?, unitPreferenceData?, unitConstants*, convertUnits*, timezoneData?, characters?, transforms?, metadata?, codeMappings?, parentLocales?, likelySubtags?, metazoneInfo?, plurals?, telephoneCodeData?, numberingSystems?, bcp47KeywordMappings?, gender?, references?, languageMatching?, dayPeriodRuleSet*, metaZones?, primaryZones?, windowsZones?, coverageLevels?, idValidity?, rgScope?, languageGroups?, grammaticalData? ) >
+<!ELEMENT supplementalData ( version, generation?, cldrVersion?, currencyData?, territoryContainment?, subdivisionContainment?, languageData?, territoryInfo?, postalCodeData?, calendarData?, calendarPreferenceData?, weekData?, timeData?, measurementData?, unitPreferenceData?, unitConstants*, unitQuantities*, convertUnits*, timezoneData?, characters?, transforms?, metadata?, codeMappings?, parentLocales?, likelySubtags?, metazoneInfo?, plurals?, telephoneCodeData?, numberingSystems?, bcp47KeywordMappings?, gender?, references?, languageMatching?, dayPeriodRuleSet*, metaZones?, primaryZones?, windowsZones?, coverageLevels?, idValidity?, rgScope?, languageGroups?, grammaticalData? ) >
 
 <!ELEMENT version EMPTY >
     <!--@METADATA-->
@@ -401,7 +401,19 @@ Except as contained in this notice, the name of a copyright holder shall not be 
 <!ATTLIST unitConstant value CDATA #REQUIRED >
     <!--@VALUE-->
     <!--@MATCH:any-->
+<!ATTLIST unitConstant status NMTOKEN #IMPLIED >
+    <!--@VALUE-->
+    <!--@MATCH:literal/approximate, exact-->
 
+
+<!ELEMENT unitQuantities ( unitQuantity* ) >
+
+<!ELEMENT unitQuantity EMPTY >
+<!ATTLIST unitQuantity baseUnit CDATA #REQUIRED >
+    <!--@MATCH:any-->
+<!ATTLIST unitQuantity quantity NMTOKEN #REQUIRED >
+    <!--@VALUE-->
+	<!--@MATCH:regex/[A-Za-z][A-Za-z0-9]*-->
 
 <!ELEMENT convertUnits ( convertUnit* ) >
 

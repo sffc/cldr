@@ -12,10 +12,52 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<unitConstant constant="ft2m" value="0.3048"/>
 		<unitConstant constant="lb2kg" value="0.45359237"/>
 		<unitConstant constant="gravity" value="9.80665"/>
-		<unitConstant constant="PI" value="3.1415926535897932384626433832795"/>
+		<unitConstant constant="PI" value="3.1415926535897932384626433832795" status='approximate'/>
 		<unitConstant constant="cup2m3" value="231*ft2m*ft2m*ft2m/16*12*12*12"/>
 		<unitConstant constant="G" value="6.67408E-11"/>   <!-- https://arxiv.org/abs/1510.07674 -->
 	</unitConstants>
+	<unitQuantities>
+		<unitQuantity quantity='time' baseUnit='second'/>
+		<unitQuantity quantity='length' baseUnit='meter'/>
+		<unitQuantity quantity='mass' baseUnit='kilogram'/>
+		<unitQuantity quantity='electric-current' baseUnit='ampere'/>
+		<unitQuantity quantity='temperature' baseUnit='kelvin'/>
+		<unitQuantity quantity='substance-amount' baseUnit='mole'/>
+		<unitQuantity quantity='luminous-intensity' baseUnit='candela'/>
+		<unitQuantity quantity='frequency' baseUnit='per-second'/>
+		<unitQuantity quantity='angle' baseUnit='meter-per-meter'/>
+		<unitQuantity quantity='solid-angle' baseUnit='square-meter-per-square-meter'/>
+		<unitQuantity quantity='force' baseUnit='kilogram-meter-per-square-second'/>
+		<unitQuantity quantity='pressure' baseUnit='kilogram-per-meter-square-second'/>
+		<unitQuantity quantity='energy' baseUnit='kilogram-square-meter-per-square-second'/>
+		<unitQuantity quantity='power' baseUnit='kilogram-square-meter-per-cubic-second'/>
+		<unitQuantity quantity='electric-charge' baseUnit='second-ampere'/>
+		<unitQuantity quantity='voltage' baseUnit='kilogram-square-meter-per-cubic-second-ampere'/>
+		<unitQuantity quantity='electric-capacitance' baseUnit='pow4-second-square-ampere-per-kilogram-square-meter'/>
+		<unitQuantity quantity='electric-resistance' baseUnit='kilogram-square-meter-per-cubic-second-square-ampere'/>
+		<unitQuantity quantity='electric-conductance' baseUnit='cubic-second-square-ampere-per-kilogram-square-meter'/>
+		<unitQuantity quantity='magnetic-flux' baseUnit='kilogram-square-meter-per-square-second-ampere'/>
+		<unitQuantity quantity='magnetic-induction' baseUnit='kilogram-per-square-second-ampere'/>
+		<unitQuantity quantity='electric-inductance' baseUnit='kilogram-square-meter-per-square-second-square-ampere'/>
+		<unitQuantity quantity='luminous-flux' baseUnit='candela-square-meter-per-square-meter'/>
+		<unitQuantity quantity='dose' baseUnit='square-meter-per-square-second'/>
+		<unitQuantity quantity='catalytic-activity' baseUnit='mole-per-second'/>
+		<unitQuantity quantity='area' baseUnit='square-meter'/>
+		<unitQuantity quantity='volume' baseUnit='cubic-meter'/>
+		<unitQuantity quantity='speed' baseUnit='meter-per-second'/>
+		<unitQuantity quantity='acceleration' baseUnit='meter-per-square-second'/>
+		<unitQuantity quantity='wave-number' baseUnit='per-meter'/>
+		<unitQuantity quantity='mass-density' baseUnit='kilogram-per-cubic-meter'/>
+		<unitQuantity quantity='specific-volume' baseUnit='cubic-meter-per-kilogram'/>
+		<unitQuantity quantity='current-density' baseUnit='ampere-per-square-meter'/>
+		<unitQuantity quantity='magnetic-field-strength' baseUnit='ampere-per-meter'/>
+		<unitQuantity quantity='concentration' baseUnit='mole-per-cubic-meter'/>
+		<unitQuantity quantity='luminance' baseUnit='candela-per-square-meter'/>
+		<unitQuantity quantity='mass-fraction' baseUnit='kilogram-per-kilogram'/>
+		<unitQuantity quantity='torque' baseUnit='kilogram-meter-per-meter-square-second'/>
+		<unitQuantity quantity='year-duration' baseUnit='year'/>
+		<unitQuantity quantity='angle' baseUnit='degree'/>
+	</unitQuantities>
 		<!-- Values where possible from NIST Special Publication 1038 
 		https://www.govinfo.gov/content/pkg/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4/pdf/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4.pdf -->
 	<convertUnits>
@@ -60,10 +102,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='pound' target='kilogram' factor='lb2kg'/>
 		<convertUnit source='stone' target='kilogram' factor='lb2kg*14'/>
 		<convertUnit source='ton' target='kilogram' factor='lb2kg*2000'/>
-		<convertUnit source='horsepower' target='square-meter-kilogram-per-cubic-second' factor='ft2m * lb2kg * gravity * 550'/>
+		<convertUnit source='horsepower' target='kilogram-square-meter-per-cubic-second' factor='ft2m * lb2kg * gravity * 550'/>
 		<convertUnit source='inch-hg' target='kilogram-per-meter-square-second' factor='3386.389'/>
 		<convertUnit source='knot' target='meter-per-second' factor='1852/3600'/>
-		<convertUnit source='fahrenheit' target='celsius' factor='5/9' offset='-160/9'/>
+		<convertUnit source='fahrenheit' target='kelvin' factor='5/9' offset='-2618.35/9'/>
 		<convertUnit source='acre-foot' target='cubic-meter' factor='ft2m^3 * 43560'/>
 		<convertUnit source='barrel' target='cubic-meter' factor='cup2m3 * 672'/>
 		<convertUnit source='bushel' target='cubic-meter' factor='0.03523907'/>
@@ -88,7 +130,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='watt' target='kilogram-square-meter-per-cubic-second' factor='1'/>
 		<convertUnit source='bar' target='kilogram-per-meter-square-second' factor='100000'/>
 		<convertUnit source='pascal' target='kilogram-per-meter-square-second' factor='1'/>
-		<convertUnit source='kelvin' target='celsius' factor='1' offset='273.15'/>
+		<convertUnit source='celsius' target='kelvin' factor='1' offset='-273.15'/>
 		<convertUnit source='cup-metric' target='cubic-meter' factor='0.00025'/>
 		<convertUnit source='liter' target='cubic-meter' factor='0.001'/>
 		<convertUnit source='pint-metric' target='cubic-meter' factor='0.0005'/>
@@ -103,11 +145,12 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='solar-mass' target='kilogram' factor='1.98847E+30'/> <!-- https://arxiv.org/abs/1510.07674 -->
 		<convertUnit source='earth-mass' target='kilogram' factor='5.9722E+24'/>  <!-- https://arxiv.org/abs/1510.07674 -->
 		<convertUnit source='year-person' target='year' factor='1'/>
-		<convertUnit source='permillion' target='one-per-one' factor='1/1000000'/>
-		<convertUnit source='meter-per-mercury' target='kilogram-per-meter-square-second' factor='10132500/760'/>
+		<convertUnit source='part-per-million' target='one-per-one' factor='1/1000000'/>
+		<convertUnit source='millimeter-of-mercury' target='kilogram-per-meter-square-second' factor='10132500/760000'/>
 		<convertUnit source='british-thermal-unit' target='kilogram-square-meter-per-square-second' factor='1055.06'/>
 		<convertUnit source='point' target='meter' factor='ft2m/864'/>
 		<convertUnit source='dalton' target='kilogram-square-meter-per-square-second' factor='1.49241808560E-10'/> <!-- https://physics.nist.gov/cgi-bin/cuu/Value?uj -->
-		<!-- em, lux, mile-per-gallon-imperial, millimeter-of-mercury, part-per-million -->
+		<convertUnit source='lux' target='candela-square-meter-per-square-meter' factor='1'/>
+		<!-- part-per-million, liter-per-100kilometers, em, lux, millimeter-of-mercury -->
 	</convertUnits>
 </supplementalData>

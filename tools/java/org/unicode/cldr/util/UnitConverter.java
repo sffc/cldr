@@ -49,13 +49,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
         sourceToTargetToInfo = ImmutableMap.copyOf(sourceToTargetToInfo);
         toBaseUnit = ImmutableMap.copyOf(toBaseUnit);
         baseUnits = ImmutableSet.<String>builder()
-            .add("second", 
-                "meter", 
-                "kilogram", 
-                "ampere", 
-                "celsius",
-                "mole", 
-                "candela")
+            .addAll(BASE_UNITS)
             .addAll(toBaseUnit.values())
             .build();
         continuations = ImmutableMultimap.copyOf(continuations);
@@ -100,9 +94,9 @@ public class UnitConverter implements Freezable<UnitConverter> {
         public String toString() {
             return factor 
                 + (reciprocal ? " / x" : " * x") 
-            + (offset.equals(Rational.ZERO) ? "" : 
-                (offset.compareTo(Rational.ZERO) < 0 ? " - " : " - ")
-                + offset.abs());
+                + (offset.equals(Rational.ZERO) ? "" : 
+                    (offset.compareTo(Rational.ZERO) < 0 ? " - " : " - ")
+                    + offset.abs());
         }
 
         public String toDecimal() {
@@ -295,7 +289,9 @@ public class UnitConverter implements Freezable<UnitConverter> {
 
     static final ImmutableMap<String, String> FIX_DENORMALIZED = ImmutableMap.of(
         "meter-per-second-squared", "meter-per-square-second",
-        "liter-per-100kilometers", "liter-per-100-kilometers");
+        "liter-per-100kilometers", "liter-per-100-kilometers",
+        "pound-foot", "pound-force-foot",
+        "pound-per-square-inch", "pound-force-per-square-inch");
 
     /**
      * Takes a derived unit id, and produces the equivalent derived base unit id and UnitInfo to convert to it
@@ -305,7 +301,10 @@ public class UnitConverter implements Freezable<UnitConverter> {
     public UnitInfo parseUnitId (String derivedUnit, Output<String> metricUnit) {
         metricUnit.value = null;
 
-        StringBuilder outputUnit = new StringBuilder();
+        if (derivedUnit.equals("kilowatt-hour")) {
+            int debug = 0;
+        }
+        UnitId outputUnit = new UnitId();
         Rational numerator = Rational.ONE;
         Rational denominator = Rational.ONE;
         boolean inNumerator = true;
@@ -313,38 +312,33 @@ public class UnitConverter implements Freezable<UnitConverter> {
 
         Output<Rational> deprefix = new Output<>();
 
-        for (Entry<String, String> entry : FIX_DENORMALIZED.entrySet()) {
-            String old = entry.getKey();
-            if (old.contentEquals(derivedUnit)) {
-                derivedUnit = entry.getValue();
-            }
+        String fixed = FIX_DENORMALIZED.get(derivedUnit);
+        if (fixed != null) {
+            derivedUnit = fixed;
         }
 
         for (String unit : Continuation.split(derivedUnit, continuations)) {
 
-            if (unit.equals("square")) { // TODO pow4
-                power = 2;
-                if (outputUnit.length() != 0) {
-                    outputUnit.append('-');
-                }
-                outputUnit.append(unit);
-                continue;
-            } else if (unit.equals("cubic")) {
-                power = 3;
-                if (outputUnit.length() != 0) {
-                    outputUnit.append('-');
-                }
-                outputUnit.append(unit);
-                continue;
-            }
-            if (unit.equals("per")) {
+            if (unit.equals("square")) {
                 if (power != 1) {
                     throw new IllegalArgumentException("Can't have power of " + unit);
                 }
-                if (!inNumerator) {
-                    continue; // ignore multiples
+                power = 2;
+            } else if (unit.equals("cubic")) {
+                if (power != 1) {
+                    throw new IllegalArgumentException("Can't have power of " + unit);
                 }
-                inNumerator = false;
+                power = 3;
+            } else if (unit.startsWith("pow")) {
+                if (power != 1) {
+                    throw new IllegalArgumentException("Can't have power of " + unit);
+                }
+                power = Integer.parseInt(unit.substring(3));
+            } else if (unit.equals("per")) {
+                if (power != 1) {
+                    throw new IllegalArgumentException("Can't have power of per");
+                }
+                inNumerator = false; // ignore multiples
             } else if ('9' >= unit.charAt(0)) {
                 if (power != 1) {
                     throw new IllegalArgumentException("Can't have power of " + unit);
@@ -355,7 +349,6 @@ public class UnitConverter implements Freezable<UnitConverter> {
                 } else {
                     denominator = denominator.multiply(factor);
                 }
-                continue;
             } else {
                 // kilo etc.
                 Rational value = Rational.ONE;
@@ -379,15 +372,129 @@ public class UnitConverter implements Freezable<UnitConverter> {
                         denominator = denominator.multiply(value);
                     }
                 }
+                // create cleaned up target unitid
+                outputUnit.add(unit, inNumerator, power);
+                power = 1;
             }
-            // create cleaned up target unitid
-            if (outputUnit.length() != 0) {
-                outputUnit.append('-');
-            }
-            outputUnit.append(unit);
         }
         metricUnit.value = outputUnit.toString();
         return new UnitInfo(numerator.divide(denominator), Rational.ZERO, false); // fix parameters 2,3 later
+    }
+
+    /** Warning: ordering is important; determines the normalized output */
+    public static final Set<String> BASE_UNITS = ImmutableSet.of(
+        "candela",
+        "kilogram", 
+        "meter", 
+        "second", "year", "month",
+        "ampere", 
+        "kelvin",
+        "mole", 
+        "bit", 
+        "one", 
+        "pixel", 
+        "em", 
+        "degree");
+    
+    public static final MapComparator<String> UNIT_COMPARATOR = new MapComparator<>(BASE_UNITS)
+        .setErrorOnMissing(true)
+        .freeze();
+
+    public static final Set<String> BASE_UNIT_PARTS = ImmutableSet.<String>builder()
+        .add("per").add("square").add("cubic").addAll(BASE_UNITS)
+        .build();
+
+    /** 
+     * Only handles the canonical units; no kilo-, only normalized, etc.
+     * @author markdavis
+     *
+     */
+    public class UnitId implements Freezable<UnitId> {
+        private Map<String, Integer> numUnitsToPowers = new TreeMap<>(UNIT_COMPARATOR);
+        private Map<String, Integer> denUnitsToPowers = new TreeMap<>(UNIT_COMPARATOR);
+        private boolean frozen = false;
+
+        public UnitId add(String compoundUnit, boolean groupInNumerator, int groupPower) {
+            if (frozen) {
+                throw new UnsupportedOperationException("Object is frozen.");
+            }
+            boolean inNumerator = true;
+            int power = 1;
+            // maybe refactor common parts with above code.
+            for (String unitPart : Continuation.split(compoundUnit, continuations)) {
+                switch (unitPart) {
+                case "square": power = 2; break;
+                case "cubic": power = 3; break;
+                case "per": inNumerator = false; break; // sticky, ignore multiples
+                default: 
+                    if (unitPart.startsWith("pow")) {
+                        power = Integer.parseInt(unitPart.substring(3));
+                    } else {
+                        Map<String, Integer> target = inNumerator == groupInNumerator ? numUnitsToPowers : denUnitsToPowers;
+                        Integer oldPower = target.get(unitPart);
+                        // we multiply powers, so that weight-square-volume => weight-pow4-length
+                        int newPower = groupPower * power + (oldPower == null ? 0 : oldPower);
+                        target.put(unitPart, newPower);
+                        power = 1;
+                    }
+                }
+            }
+            return this;
+        }
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            boolean firstDenominator = true;
+            for (int i = 1; i >= 0; --i) { // two passes, numerator then den.
+                boolean positivePass = i > 0;
+                Map<String, Integer> target = positivePass ? numUnitsToPowers : denUnitsToPowers;
+                for (Entry<String, Integer> entry : target.entrySet()) {
+                    String unit = entry.getKey();
+                    int power = entry.getValue();
+                    // NOTE: zero (eg one-per-one) gets counted twice
+                    if (builder.length() != 0) {
+                        builder.append('-');
+                    }
+                    if (!positivePass) {
+                        if (firstDenominator) {
+                            firstDenominator = false;
+                            builder.append("per-");
+                        }
+                    }
+                    switch (power) {
+                    case 1: 
+                        break;
+                    case 2: 
+                        builder.append("square-"); break;
+                    case 3: 
+                        builder.append("cubic-"); break;
+                    default: 
+                        if (power > 3) {
+                            builder.append("pow" + power + "-");
+                        } else {
+                            throw new IllegalArgumentException("Unhandled power: " + power);
+                        }
+                        break;
+                    }
+                    builder.append(unit);
+
+                }
+            }
+            return builder.toString();
+        }
+        @Override
+        public boolean isFrozen() {
+            return frozen;
+        }
+        @Override
+        public UnitId freeze() {
+            frozen = true;
+            return this;
+        }
+        @Override
+        public UnitId cloneAsThawed() {
+            throw new UnsupportedOperationException();
+        }
     }
 
     public boolean isBaseUnit(String unit) {

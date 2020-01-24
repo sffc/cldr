@@ -910,6 +910,7 @@ public class SupplementalDataInfo {
     public Multimap<String, String> languageGroups = TreeMultimap.create();
     
     public RationalParser rationalParser = new RationalParser();
+    public Map<String,String> baseUnitToQuantity = new TreeMap<>();
     public UnitConverter unitConverter = new UnitConverter(rationalParser);
 
     public enum MeasurementType {
@@ -1149,6 +1150,7 @@ public class SupplementalDataInfo {
         coverageLevels = Collections.unmodifiableSortedSet(coverageLevels);
 
         measurementData = CldrUtility.protectCollection(measurementData);
+        baseUnitToQuantity = CldrUtility.protectCollection(baseUnitToQuantity);
         unitConverter.freeze();
         rationalParser.freeze();
         timeData = CldrUtility.protectCollection(timeData);
@@ -1296,6 +1298,10 @@ public class SupplementalDataInfo {
                     if (handleUnitConstants(parts)) {
                         return;
                     }
+                } else if (level1.equals("unitQuantities")) {
+                    if (handleUnitQuantities(parts)) {
+                        return;
+                    }
                 } else if (level1.equals("convertUnits")) {
                     if (handleUnitConversion(parts)) {
                         return;
@@ -1355,6 +1361,15 @@ public class SupplementalDataInfo {
             final String constant = parts.getAttributeValue(-1, "constant");
             final String value = parts.getAttributeValue(-1, "value");
             rationalParser.addConstant(constant, value);
+            return true;
+        }
+        
+        private boolean handleUnitQuantities(XPathParts parts) {
+            //      <unitQuantity quantity='wave-number' baseUnit='reciprocal-meter'/>
+
+            final String quantity = parts.getAttributeValue(-1, "quantity");
+            final String baseUnit = parts.getAttributeValue(-1, "baseUnit");
+            baseUnitToQuantity.put(baseUnit, quantity);
             return true;
         }
 
@@ -4359,6 +4374,11 @@ public class SupplementalDataInfo {
     public UnitConverter getUnitConverter() {
         return unitConverter;
     }
+    
+    public Map<String, String> getBaseUnitToQuantity() {
+        return baseUnitToQuantity;
+    }
+
     public RationalParser getRationalParser() {
         return rationalParser;
     }

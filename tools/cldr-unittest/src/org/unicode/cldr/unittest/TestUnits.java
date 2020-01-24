@@ -30,6 +30,7 @@ import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralInfo.Count;
 import org.unicode.cldr.util.SupplementalDataInfo.PluralType;
 import org.unicode.cldr.util.UnitConverter;
+import org.unicode.cldr.util.UnitConverter.UnitId;
 import org.unicode.cldr.util.UnitConverter.UnitInfo;
 import org.unicode.cldr.util.Units;
 import org.unicode.cldr.util.Validity;
@@ -374,16 +375,38 @@ public class TestUnits extends TestFmwk {
     public void TestBaseUnits() {
         UnitConverter converter = SDI.getUnitConverter();
         Splitter barSplitter = Splitter.on('-');
-        ImmutableSet<String> allowedInBase = ImmutableSet.of(
-            "second", "meter","kilogram", "ampere", "celsius", // kelvin
-            "mole", "candela", 
-            "per", "square", "cubic", 
-            "one", "bit", "degree", // instead of radian
-            "year", "pixel", "em"
-            );
         for (String unit : converter.baseUnits()) {
             for (String piece : barSplitter.split(unit)) {
-                assertTrue(unit + ": " + piece + " in " + allowedInBase, allowedInBase.contains(piece));
+                assertTrue(unit + ": " + piece + " in " + UnitConverter.BASE_UNIT_PARTS, UnitConverter.BASE_UNIT_PARTS.contains(piece));
+            }
+        }
+    }
+
+    public void TestUnitId() {
+        UnitConverter converter = SDI.getUnitConverter();
+        for (String canonicalUnit : converter.simpleToBaseUnits().values()) {
+            UnitId unitId = converter.new UnitId().add(canonicalUnit, true, 1);
+            String output = unitId.toString();
+            if (!assertEquals("targets should be in canonical form", 
+                output, canonicalUnit)) {
+                // for debugging
+                converter.new UnitId().add(canonicalUnit, true, 1);
+                unitId.toString();
+            }
+        }
+        for (Entry<String, String> baseUnitToQuantity : SDI.getBaseUnitToQuantity().entrySet()) {
+            String baseUnit = baseUnitToQuantity.getKey();
+            try {
+                UnitId unitId = converter.new UnitId().add(baseUnit, true, 1);
+                String output = unitId.toString();
+                if (!assertEquals("targets should be in canonical form", 
+                    output, baseUnit)) {
+                    // for debugging
+                    converter.new UnitId().add(baseUnit, true, 1);
+                    unitId.toString();
+                }
+            } catch (Exception e) {
+                errln("Can't convert baseUnit: " + baseUnit);
             }
         }
     }
@@ -392,7 +415,7 @@ public class TestUnits extends TestFmwk {
         UnitConverter converter = SDI.getUnitConverter();
         Output<String> compoundBaseUnit = new Output<>();
         String[][] tests = {
-            {"kilometer-pound-per-hour", "meter-kilogram-per-second", "45359237/360000000"},
+            {"kilometer-pound-per-hour", "kilogram-meter-per-second", "45359237/360000000"},
             {"kilometer-per-hour", "meter-per-second", "5/18"},
         };
         for (String[] test : tests) {
@@ -407,27 +430,40 @@ public class TestUnits extends TestFmwk {
         // check all 
         System.out.println();
         Set<String> badUnits = new LinkedHashSet<>();
-        
+        Set<String> noQuantity = new LinkedHashSet<>();
+
         // checkUnitConvertability(converter, compoundBaseUnit, badUnits, "pint-metric-per-second");
 
         for (Entry<String, String> entry : TYPE_TO_CORE.entries()) {
             String type = entry.getKey();
             String unit = entry.getValue();
-            checkUnitConvertability(converter, compoundBaseUnit, badUnits, type, unit);
+            if (NOT_CONVERTABLE.contains(unit)) {
+                continue;
+            }
+            checkUnitConvertability(converter, compoundBaseUnit, badUnits, noQuantity, type, unit);
         }
         assertEquals("Unconvertable units", Collections.emptySet(), badUnits);
+        assertEquals("Units without Quantity", Collections.emptySet(), noQuantity);
     }
 
+    static final Set<String> NOT_CONVERTABLE = ImmutableSet.of("generic", "em", "lux");
+
     private void checkUnitConvertability(UnitConverter converter, Output<String> compoundBaseUnit, 
-        Set<String> badUnits, String type, String unit) {
-        if (unit.equals("generic")) {
-            return;
-        }
-        if (unit.equals("milliampere")) {
+        Set<String> badUnits, Set<String> noQuantity, String type, String unit) {
+
+        Map<String, String> toQuantity = SDI.getBaseUnitToQuantity();
+
+        if (unit.equals("kilowatt-hour")) {
             int debug = 0;
         }
         if (converter.isBaseUnit(unit)) {
-            System.out.println(type 
+            String quantity = toQuantity.get(unit);
+            if (quantity == null) {
+                noQuantity.add(unit);
+            }
+            System.out.println(
+                quantity
+                + "\t" + type 
                 + "\t" + unit
                 + "\t" + unit);
         } else {
@@ -438,15 +474,20 @@ public class TestUnits extends TestFmwk {
             if (unitInfo == null) {
                 badUnits.add(unit);
             } else {
-            System.out.println(
-                type 
-                + "\t" + unit
-                + "\t" + compoundBaseUnit
-                + "\t" + unitInfo.factor.toBigDecimal(MathContext.DECIMAL32)
-                + "\t" + unitInfo.factor.reciprocal().toBigDecimal(MathContext.DECIMAL32)
-                + "\t" + unitInfo.toDecimal()
-                + "\t" + unitInfo
-                );
+                String quantity = toQuantity.get(compoundBaseUnit.value);
+                if (quantity == null) {
+                    noQuantity.add(compoundBaseUnit.value);
+                }
+                System.out.println(
+                    quantity
+                    + "\t" + type 
+                    + "\t" + unit
+                    + "\t" + compoundBaseUnit
+                    + "\t" + unitInfo
+                    + "\t" + unitInfo.toDecimal()
+                    + "\t" + unitInfo.factor.toBigDecimal(MathContext.DECIMAL32)
+                    + "\t" + unitInfo.factor.reciprocal().toBigDecimal(MathContext.DECIMAL32)
+                    );
             }
         }
     }
@@ -517,7 +558,7 @@ public class TestUnits extends TestFmwk {
         TYPE_TO_CORE = ImmutableMultimap.copyOf(typeToCore);
     }
 
-    public void TestUnitCategory() {
+    public void oldTestUnitCategory() {
         Matcher prefixes = Pattern.compile(
             "yotta|zetta|exa|peta|tera|giga|mega|kilo|hecto|deka|deci|centi|milli|micro|nano|pico|femto|atto|zepto|yocto")
             .matcher("");
