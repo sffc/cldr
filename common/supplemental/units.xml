@@ -54,9 +54,19 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<unitQuantity quantity='concentration' baseUnit='mole-per-cubic-meter'/>
 		<unitQuantity quantity='luminance' baseUnit='candela-per-square-meter'/>
 		<unitQuantity quantity='mass-fraction' baseUnit='kilogram-per-kilogram'/>
+		<!-- additional units -->
 		<unitQuantity quantity='torque' baseUnit='kilogram-meter-per-meter-square-second'/>
 		<unitQuantity quantity='year-duration' baseUnit='year'/>
 		<unitQuantity quantity='angle' baseUnit='degree'/>
+		<unitQuantity quantity='consumption' baseUnit='cubic-meter-per-meter'/>
+		<unitQuantity quantity='consumption-inverse' baseUnit='meter-per-cubic-meter'/>		
+		<unitQuantity quantity='digital' baseUnit='bit'/>		
+		<unitQuantity quantity='graphics' baseUnit='pixel'/>		
+		<unitQuantity quantity='digital' baseUnit='cycle-per-second'/>		
+		<unitQuantity quantity='portion' baseUnit='one-per-one'/>	
+		<unitQuantity quantity='resolution' baseUnit='pixel-per-meter'/>	
+		<unitQuantity quantity='energy' baseUnit='kilogram-square-meter-second-per-cubic-second'/> <!-- temporary -->			
+		<unitQuantity quantity='pressure' baseUnit='kilogram-meter-per-square-meter-square-second'/>
 	</unitQuantities>
 		<!-- Values where possible from NIST Special Publication 1038 
 		https://www.govinfo.gov/content/pkg/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4/pdf/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4.pdf -->
@@ -85,7 +95,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='calorie' target='kilogram-square-meter-per-square-second' factor='4.184'/>
 		<convertUnit source='electronvolt' target='kilogram-square-meter-per-square-second' factor='1.602177E-19'/>
 		<convertUnit source='foodcalorie' target='kilogram-square-meter-per-square-second' factor='4184'/>
-		<convertUnit source='hertz' target='one-per-second' factor='1'/>
+		<convertUnit source='hertz' target='cycle-per-second' factor='1'/>
 		<convertUnit source='astronomical-unit' target='meter' factor='149597900000'/>
 		<convertUnit source='acre' target='square-meter' factor='ft2m^2 * 43560'/>
 		<convertUnit source='therm-us' target='kilogram-square-meter-per-square-second' factor='105506000'/>
@@ -151,6 +161,5 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='point' target='meter' factor='ft2m/864'/>
 		<convertUnit source='dalton' target='kilogram-square-meter-per-square-second' factor='1.49241808560E-10'/> <!-- https://physics.nist.gov/cgi-bin/cuu/Value?uj -->
 		<convertUnit source='lux' target='candela-square-meter-per-square-meter' factor='1'/>
-		<!-- part-per-million, liter-per-100kilometers, em, lux, millimeter-of-mercury -->
 	</convertUnits>
 </supplementalData>

@@ -289,7 +289,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
 
     static final ImmutableMap<String, String> FIX_DENORMALIZED = ImmutableMap.of(
         "meter-per-second-squared", "meter-per-square-second",
-        "liter-per-100kilometers", "liter-per-100-kilometers",
+        "liter-per-100kilometers", "liter-per-100-kilometer",
         "pound-foot", "pound-force-foot",
         "pound-per-square-inch", "pound-force-per-square-inch");
 
@@ -301,7 +301,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
     public UnitInfo parseUnitId (String derivedUnit, Output<String> metricUnit) {
         metricUnit.value = null;
 
-        if (derivedUnit.equals("kilowatt-hour")) {
+        if (derivedUnit.equals("liter-per-100kilometers")) {
             int debug = 0;
         }
         UnitId outputUnit = new UnitId();
@@ -386,7 +386,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
         "candela",
         "kilogram", 
         "meter", 
-        "second", "year", "month",
+        "second", "year",
         "ampere", 
         "kelvin",
         "mole", 
@@ -394,7 +394,8 @@ public class UnitConverter implements Freezable<UnitConverter> {
         "one", 
         "pixel", 
         "em", 
-        "degree");
+        "degree",
+        "cycle");
     
     public static final MapComparator<String> UNIT_COMPARATOR = new MapComparator<>(BASE_UNITS)
         .setErrorOnMissing(true)

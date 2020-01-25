@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -330,46 +329,47 @@ public class TestUnits extends TestFmwk {
         }
 
         // check not overlapping
-        for (int i = 0; i < equivClasses.size(); ++i) {
-            Set<String> eclass1 = equivClasses.get(i);
-            for (int j = i+1; j < equivClasses.size(); ++j) {
-                Set<String> eclass2 = equivClasses.get(j);
-                if (!Collections.disjoint(eclass1, eclass2)) {
-                    errln("Overlapping equivalence classes: " + eclass1 + " ~ " + eclass2 + "\n\tProbably bad chain requiring 3 steps.");
-                }
-            }
-
-            // check that all elements of an equivalence class have the same type
-            Multimap<String,String> breakdown = TreeMultimap.create();
-            for (String item : eclass1) {
-                String type = CORE_TO_TYPE.get(item);
-                if (type == null) {
-                    type = "?";
-                }
-                breakdown.put(type, item);
-            }
-            if (DEBUG) System.out.println("type to item: " + breakdown);
-            if (breakdown.keySet().size() != 1) {
-                errln("mixed categories: " + breakdown);
-            }
-
-        }
-
-        // check that all units with the same type have the same equivalence class
-        for (Entry<String, Collection<String>> entry : TYPE_TO_CORE.asMap().entrySet()) {
-            Multimap<String,String> breakdown = TreeMultimap.create();
-            for (String item : entry.getValue()) {
-                String id = classToId.get(item);
-                if (id == null) {
-                    continue;
-                }
-                breakdown.put(id, item);
-            }
-            if (DEBUG) System.out.println(entry.getKey() + " id to item: " + breakdown);
-            if (breakdown.keySet().size() != 1) {
-                errln(entry.getKey() + " mixed categories: " + breakdown);
-            }
-        }
+        // now handled by TestParseUnit, but we might revive a modified version of this.
+//        for (int i = 0; i < equivClasses.size(); ++i) {
+//            Set<String> eclass1 = equivClasses.get(i);
+//            for (int j = i+1; j < equivClasses.size(); ++j) {
+//                Set<String> eclass2 = equivClasses.get(j);
+//                if (!Collections.disjoint(eclass1, eclass2)) {
+//                    errln("Overlapping equivalence classes: " + eclass1 + " ~ " + eclass2 + "\n\tProbably bad chain requiring 3 steps.");
+//                }
+//            }
+//
+//            // check that all elements of an equivalence class have the same type
+//            Multimap<String,String> breakdown = TreeMultimap.create();
+//            for (String item : eclass1) {
+//                String type = CORE_TO_TYPE.get(item);
+//                if (type == null) {
+//                    type = "?";
+//                }
+//                breakdown.put(type, item);
+//            }
+//            if (DEBUG) System.out.println("type to item: " + breakdown);
+//            if (breakdown.keySet().size() != 1) {
+//                errln("mixed categories: " + breakdown);
+//            }
+//
+//        }
+//
+//        // check that all units with the same type have the same equivalence class
+//        for (Entry<String, Collection<String>> entry : TYPE_TO_CORE.asMap().entrySet()) {
+//            Multimap<String,String> breakdown = TreeMultimap.create();
+//            for (String item : entry.getValue()) {
+//                String id = classToId.get(item);
+//                if (id == null) {
+//                    continue;
+//                }
+//                breakdown.put(id, item);
+//            }
+//            if (DEBUG) System.out.println(entry.getKey() + " id to item: " + breakdown);
+//            if (breakdown.keySet().size() != 1) {
+//                errln(entry.getKey() + " mixed categories: " + breakdown);
+//            }
+//        }
     }
 
     public void TestBaseUnits() {
@@ -453,7 +453,7 @@ public class TestUnits extends TestFmwk {
 
         Map<String, String> toQuantity = SDI.getBaseUnitToQuantity();
 
-        if (unit.equals("kilowatt-hour")) {
+        if (unit.equals("liter-per-100kilometers")) {
             int debug = 0;
         }
         if (converter.isBaseUnit(unit)) {
