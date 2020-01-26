@@ -57,17 +57,17 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<!-- additional units -->
 		<unitQuantity quantity='torque' baseUnit='kilogram-meter-per-meter-square-second'/>
 		<unitQuantity quantity='year-duration' baseUnit='year'/>
-		<unitQuantity quantity='angle' baseUnit='degree'/>
+		<unitQuantity quantity='angle' baseUnit='circle'/>
 		<unitQuantity quantity='consumption' baseUnit='cubic-meter-per-meter'/>
 		<unitQuantity quantity='consumption-inverse' baseUnit='meter-per-cubic-meter'/>		
 		<unitQuantity quantity='digital' baseUnit='bit'/>		
 		<unitQuantity quantity='graphics' baseUnit='pixel'/>		
 		<unitQuantity quantity='digital' baseUnit='cycle-per-second'/>		
-		<unitQuantity quantity='portion' baseUnit='one-per-one'/>	
+		<unitQuantity quantity='portion' baseUnit='portion'/>	
 		<unitQuantity quantity='resolution' baseUnit='pixel-per-meter'/>	
-		<unitQuantity quantity='energy' baseUnit='kilogram-square-meter-second-per-cubic-second'/> <!-- temporary -->			
-		<unitQuantity quantity='pressure' baseUnit='kilogram-meter-per-square-meter-square-second'/>
-	</unitQuantities>
+		<unitQuantity quantity='energy' baseUnit='kilogram-square-meter-second-per-cubic-second'/> <!-- redundant -->			
+		<unitQuantity quantity='pressure' baseUnit='kilogram-meter-per-square-meter-square-second'/> <!-- redundant -->
+	</unitQuantities>	
 		<!-- Values where possible from NIST Special Publication 1038 
 		https://www.govinfo.gov/content/pkg/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4/pdf/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4.pdf -->
 	<convertUnits>
@@ -84,14 +84,15 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='light-year' target='meter' factor='9460730000000000'/>
 		<convertUnit source='parsec' target='meter' factor='30856780000000000'/>
 		<convertUnit source='g-force' target='meter-per-square-second' factor='gravity'/>
-		<convertUnit source='arc-minute' target='degree' factor='1/60'/>
-		<convertUnit source='arc-second' target='degree' factor='1/360'/>
-		<convertUnit source='radian' target='degree' factor='180/PI'/>
-		<convertUnit source='revolution' target='degree' factor='360'/>
-		<convertUnit source='mole' target='one' factor='6.02214076E+23'/>
-		<convertUnit source='percent' target='one-per-one' factor='1/100'/>
-		<convertUnit source='permille' target='one-per-one' factor='1/1000'/>
-		<convertUnit source='permyriad' target='one-per-one' factor='1/10000'/>
+		<convertUnit source='revolution' target='circle' factor='1'/>
+		<convertUnit source='degree' target='circle' factor='1/360'/>
+		<convertUnit source='arc-minute' target='circle' factor='1/21600'/>
+		<convertUnit source='arc-second' target='circle' factor='1/29600'/>
+		<convertUnit source='radian' target='circle' factor='1/2*PI'/>
+		<convertUnit source='mole' target='item' factor='6.02214076E+23'/>
+		<convertUnit source='percent' target='portion' factor='1/100'/>
+		<convertUnit source='permille' target='portion' factor='1/1000'/>
+		<convertUnit source='permyriad' target='portion' factor='1/10000'/>
 		<convertUnit source='calorie' target='kilogram-square-meter-per-square-second' factor='4.184'/>
 		<convertUnit source='electronvolt' target='kilogram-square-meter-per-square-second' factor='1.602177E-19'/>
 		<convertUnit source='foodcalorie' target='kilogram-square-meter-per-square-second' factor='4184'/>
@@ -124,7 +125,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='gallon' target='cubic-meter' factor='cup2m3*16'/>
 		<convertUnit source='tablespoon' target='cubic-meter' factor='cup2m3/16'/>
 		<convertUnit source='teaspoon' target='cubic-meter' factor='cup2m3/48'/>
-		<convertUnit source='karat' target='one-per-one' factor='1/24'/>
+		<convertUnit source='karat' target='portion' factor='1/24'/>
 		<convertUnit source='pint' target='cubic-meter' factor='cup2m3 * 2'/>
 		<convertUnit source='quart' target='cubic-meter' factor='cup2m3 * 4'/>
 		<convertUnit source='fluid-ounce-imperial' target='cubic-meter' factor='0.00002841306'/>
@@ -155,11 +156,19 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='solar-mass' target='kilogram' factor='1.98847E+30'/> <!-- https://arxiv.org/abs/1510.07674 -->
 		<convertUnit source='earth-mass' target='kilogram' factor='5.9722E+24'/>  <!-- https://arxiv.org/abs/1510.07674 -->
 		<convertUnit source='year-person' target='year' factor='1'/>
-		<convertUnit source='part-per-million' target='one-per-one' factor='1/1000000'/>
+		<convertUnit source='part-per-million' target='portion' factor='1/1000000'/>
 		<convertUnit source='millimeter-of-mercury' target='kilogram-per-meter-square-second' factor='10132500/760000'/>
 		<convertUnit source='british-thermal-unit' target='kilogram-square-meter-per-square-second' factor='1055.06'/>
 		<convertUnit source='point' target='meter' factor='ft2m/864'/>
 		<convertUnit source='dalton' target='kilogram-square-meter-per-square-second' factor='1.49241808560E-10'/> <!-- https://physics.nist.gov/cgi-bin/cuu/Value?uj -->
 		<convertUnit source='lux' target='candela-square-meter-per-square-meter' factor='1'/>
 	</convertUnits>
-</supplementalData>
+    <metadata>
+	    <alias>
+		    <unitAlias type="meter-per-second-squared" replacement="meter-per-square-second" reason="deprecated"/>
+		    <unitAlias type="liter-per-100kilometers" replacement="liter-per-100-kilometer" reason="deprecated"/>
+		    <unitAlias type="pound-foot" replacement="pound-force-foot" reason="deprecated"/>
+		    <unitAlias type="pound-per-square-inch" replacement="pound-force-per-square-inch" reason="deprecated"/>
+	   </alias>
+	</metadata>
+    </supplementalData>

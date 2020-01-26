@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import org.unicode.cldr.test.ExampleGenerator;
 import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
+import org.unicode.cldr.util.CldrUtility;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.Rational;
 import org.unicode.cldr.util.StandardCodes.LstrType;
@@ -45,6 +46,8 @@ import com.ibm.icu.dev.test.TestFmwk;
 import com.ibm.icu.util.Output;
 
 public class TestUnits extends TestFmwk {
+    private static final boolean SHOW_DATA = CldrUtility.getProperty("TestUnits:SHOW_DATA", false);
+
     private static final SupplementalDataInfo SDI = CLDRConfig.getInstance().getSupplementalDataInfo();
 
     CLDRConfig info = CLDRConfig.getInstance();
@@ -461,11 +464,13 @@ public class TestUnits extends TestFmwk {
             if (quantity == null) {
                 noQuantity.add(unit);
             }
-            System.out.println(
-                quantity
-                + "\t" + type 
-                + "\t" + unit
-                + "\t" + unit);
+            if (SHOW_DATA) {
+                System.out.println(
+                    quantity
+                    + "\t" + type 
+                    + "\t" + unit
+                    + "\t" + unit);
+            }
         } else {
             UnitInfo unitInfo = converter.getUnitInfo(unit, compoundBaseUnit);
             if (unitInfo == null) {
@@ -473,7 +478,7 @@ public class TestUnits extends TestFmwk {
             }
             if (unitInfo == null) {
                 badUnits.add(unit);
-            } else {
+            } else if (SHOW_DATA){
                 String quantity = toQuantity.get(compoundBaseUnit.value);
                 if (quantity == null) {
                     noQuantity.add(compoundBaseUnit.value);
@@ -484,9 +489,9 @@ public class TestUnits extends TestFmwk {
                     + "\t" + unit
                     + "\t" + compoundBaseUnit
                     + "\t" + unitInfo
-                    + "\t" + unitInfo.toDecimal()
-                    + "\t" + unitInfo.factor.toBigDecimal(MathContext.DECIMAL32)
-                    + "\t" + unitInfo.factor.reciprocal().toBigDecimal(MathContext.DECIMAL32)
+                    + "\t" + unitInfo.convert(Rational.of(1000,1)).toBigDecimal(MathContext.DECIMAL32).doubleValue()
+//                    + "\t" + unitInfo.factor.toBigDecimal(MathContext.DECIMAL32)
+//                    + "\t" + unitInfo.factor.reciprocal().toBigDecimal(MathContext.DECIMAL32)
                     );
             }
         }

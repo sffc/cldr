@@ -386,16 +386,19 @@ public class UnitConverter implements Freezable<UnitConverter> {
         "candela",
         "kilogram", 
         "meter", 
-        "second", "year",
+        "second",
         "ampere", 
         "kelvin",
         "mole", 
+        // non-SI
+        "year", 
         "bit", 
-        "one", 
+        "item", 
         "pixel", 
         "em", 
-        "degree",
-        "cycle");
+        "circle",
+        "cycle",
+        "portion");
     
     public static final MapComparator<String> UNIT_COMPARATOR = new MapComparator<>(BASE_UNITS)
         .setErrorOnMissing(true)

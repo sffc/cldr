@@ -633,7 +633,7 @@ Except as contained in this notice, the name of a copyright holder shall not be 
     <!--@METADATA-->
     <!--@DEPRECATED:true, false-->
 
-<!ELEMENT alias ( languageAlias*, scriptAlias*, territoryAlias*, subdivisionAlias*, variantAlias*, zoneAlias* ) >
+<!ELEMENT alias ( languageAlias*, scriptAlias*, territoryAlias*, subdivisionAlias*, variantAlias*, zoneAlias*, unitAlias* ) >
 <!ATTLIST alias draft (approved | contributed | provisional | unconfirmed | true | false) #IMPLIED >
     <!--@METADATA-->
     <!--@DEPRECATED-->
@@ -690,6 +690,15 @@ Except as contained in this notice, the name of a copyright holder shall not be 
 	<!--@MATCH:bcp47/tz-->
     <!--@VALUE-->
 <!ATTLIST zoneAlias reason (deprecated | overlong) #IMPLIED >
+    <!--@VALUE-->
+    
+<!ELEMENT unitAlias EMPTY >
+<!ATTLIST unitAlias type NMTOKEN #REQUIRED >
+	<!--@MATCH:validity/unit-->
+<!ATTLIST unitAlias replacement NMTOKEN #REQUIRED >
+	<!--@MATCH:validity/unit-->
+    <!--@VALUE-->
+<!ATTLIST unitAlias reason (deprecated | overlong | macrolanguage | legacy | bibliographic) #IMPLIED >
     <!--@VALUE-->
 
 <!ELEMENT deprecated ( deprecatedItems* ) >
