@@ -23,6 +23,7 @@ import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CldrUtility;
 import org.unicode.cldr.util.Factory;
+import org.unicode.cldr.util.Pair;
 import org.unicode.cldr.util.Rational;
 import org.unicode.cldr.util.StandardCodes.LstrType;
 import org.unicode.cldr.util.SupplementalDataInfo;
@@ -434,6 +435,7 @@ public class TestUnits extends TestFmwk {
         System.out.println();
         Set<String> badUnits = new LinkedHashSet<>();
         Set<String> noQuantity = new LinkedHashSet<>();
+        Multimap<Pair<String,Double>, String> testPrintout = TreeMultimap.create();
 
         // checkUnitConvertability(converter, compoundBaseUnit, badUnits, "pint-metric-per-second");
 
@@ -443,16 +445,32 @@ public class TestUnits extends TestFmwk {
             if (NOT_CONVERTABLE.contains(unit)) {
                 continue;
             }
-            checkUnitConvertability(converter, compoundBaseUnit, badUnits, noQuantity, type, unit);
+            checkUnitConvertability(converter, compoundBaseUnit, badUnits, noQuantity, type, unit, testPrintout);
         }
         assertEquals("Unconvertable units", Collections.emptySet(), badUnits);
         assertEquals("Units without Quantity", Collections.emptySet(), noQuantity);
+        if (SHOW_DATA) {
+            System.out.println(
+                "# Test data for unit conversions\n" 
+                    + "# Format:\n"
+                    + "#\tQuantity\t;\tx\t;\ty\t;\tconversion to y (rational)\t;\ttest: 1000 ⟹ y\n"
+                    + "#\n"
+                    + "# Use: convert 1000 x units to the y unit; the result should match the final column,\n"
+                    + "#   at the given precision. For example, when the last column is 159.1549,\n"
+                    + "#   round to 4 decimal digits before comparing.\n"
+                    + "# Generation: Set SHOW_DATA in TestUnits.java\n"
+                );
+            for (Entry<Pair<String, Double>, String> entry : testPrintout.entries()) {
+                System.out.println(entry.getValue());
+            }
+        }
     }
 
     static final Set<String> NOT_CONVERTABLE = ImmutableSet.of("generic", "em", "lux");
 
     private void checkUnitConvertability(UnitConverter converter, Output<String> compoundBaseUnit, 
-        Set<String> badUnits, Set<String> noQuantity, String type, String unit) {
+        Set<String> badUnits, Set<String> noQuantity, String type, String unit, 
+        Multimap<Pair<String, Double>, String> testPrintout) {
 
         Map<String, String> toQuantity = SDI.getBaseUnitToQuantity();
 
@@ -465,11 +483,12 @@ public class TestUnits extends TestFmwk {
                 noQuantity.add(unit);
             }
             if (SHOW_DATA) {
-                System.out.println(
+                testPrintout.put(
+                    new Pair<>(quantity, 1000d),
                     quantity
-                    + "\t" + type 
-                    + "\t" + unit
-                    + "\t" + unit);
+                    + "\t;\t" + unit
+                    + "\t;\t" + unit
+                    + "\t;\t1 * x\t;\t1,000.00");
             }
         } else {
             UnitInfo unitInfo = converter.getUnitInfo(unit, compoundBaseUnit);
@@ -483,13 +502,14 @@ public class TestUnits extends TestFmwk {
                 if (quantity == null) {
                     noQuantity.add(compoundBaseUnit.value);
                 }
-                System.out.println(
+                final double testValue = unitInfo.convert(Rational.of(1000,1)).toBigDecimal(MathContext.DECIMAL32).doubleValue();
+                testPrintout.put(
+                    new Pair<>(quantity, testValue),
                     quantity
-                    + "\t" + type 
-                    + "\t" + unit
-                    + "\t" + compoundBaseUnit
-                    + "\t" + unitInfo
-                    + "\t" + unitInfo.convert(Rational.of(1000,1)).toBigDecimal(MathContext.DECIMAL32).doubleValue()
+                    + "\t;\t" + unit
+                    + "\t;\t" + compoundBaseUnit
+                    + "\t;\t" + unitInfo
+                    + "\t;\t" + testValue
 //                    + "\t" + unitInfo.factor.toBigDecimal(MathContext.DECIMAL32)
 //                    + "\t" + unitInfo.factor.reciprocal().toBigDecimal(MathContext.DECIMAL32)
                     );
