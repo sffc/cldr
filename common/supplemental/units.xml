@@ -17,56 +17,57 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<unitConstant constant="G" value="6.67408E-11"/>   <!-- https://arxiv.org/abs/1510.07674 -->
 	</unitConstants>
 	<unitQuantities>
-		<unitQuantity quantity='time' baseUnit='second'/>
-		<unitQuantity quantity='length' baseUnit='meter'/>
-		<unitQuantity quantity='mass' baseUnit='kilogram'/>
-		<unitQuantity quantity='electric-current' baseUnit='ampere'/>
-		<unitQuantity quantity='temperature' baseUnit='kelvin'/>
-		<unitQuantity quantity='substance-amount' baseUnit='mole'/>
-		<unitQuantity quantity='luminous-intensity' baseUnit='candela'/>
-		<unitQuantity quantity='frequency' baseUnit='per-second'/>
-		<unitQuantity quantity='angle' baseUnit='meter-per-meter'/>
-		<unitQuantity quantity='solid-angle' baseUnit='square-meter-per-square-meter'/>
-		<unitQuantity quantity='force' baseUnit='kilogram-meter-per-square-second'/>
-		<unitQuantity quantity='pressure' baseUnit='kilogram-per-meter-square-second'/>
-		<unitQuantity quantity='energy' baseUnit='kilogram-square-meter-per-square-second'/>
-		<unitQuantity quantity='power' baseUnit='kilogram-square-meter-per-cubic-second'/>
-		<unitQuantity quantity='electric-charge' baseUnit='second-ampere'/>
-		<unitQuantity quantity='voltage' baseUnit='kilogram-square-meter-per-cubic-second-ampere'/>
-		<unitQuantity quantity='electric-capacitance' baseUnit='pow4-second-square-ampere-per-kilogram-square-meter'/>
-		<unitQuantity quantity='electric-resistance' baseUnit='kilogram-square-meter-per-cubic-second-square-ampere'/>
-		<unitQuantity quantity='electric-conductance' baseUnit='cubic-second-square-ampere-per-kilogram-square-meter'/>
-		<unitQuantity quantity='magnetic-flux' baseUnit='kilogram-square-meter-per-square-second-ampere'/>
-		<unitQuantity quantity='magnetic-induction' baseUnit='kilogram-per-square-second-ampere'/>
-		<unitQuantity quantity='electric-inductance' baseUnit='kilogram-square-meter-per-square-second-square-ampere'/>
-		<unitQuantity quantity='luminous-flux' baseUnit='candela-square-meter-per-square-meter'/>
-		<unitQuantity quantity='dose' baseUnit='square-meter-per-square-second'/>
-		<unitQuantity quantity='catalytic-activity' baseUnit='mole-per-second'/>
-		<unitQuantity quantity='area' baseUnit='square-meter'/>
-		<unitQuantity quantity='volume' baseUnit='cubic-meter'/>
-		<unitQuantity quantity='speed' baseUnit='meter-per-second'/>
-		<unitQuantity quantity='acceleration' baseUnit='meter-per-square-second'/>
-		<unitQuantity quantity='wave-number' baseUnit='per-meter'/>
-		<unitQuantity quantity='mass-density' baseUnit='kilogram-per-cubic-meter'/>
-		<unitQuantity quantity='specific-volume' baseUnit='cubic-meter-per-kilogram'/>
-		<unitQuantity quantity='current-density' baseUnit='ampere-per-square-meter'/>
-		<unitQuantity quantity='magnetic-field-strength' baseUnit='ampere-per-meter'/>
-		<unitQuantity quantity='concentration' baseUnit='mole-per-cubic-meter'/>
-		<unitQuantity quantity='luminance' baseUnit='candela-per-square-meter'/>
-		<unitQuantity quantity='mass-fraction' baseUnit='kilogram-per-kilogram'/>
-		<!-- additional units -->
-		<unitQuantity quantity='torque' baseUnit='kilogram-meter-per-meter-square-second'/>
-		<unitQuantity quantity='year-duration' baseUnit='year'/>
-		<unitQuantity quantity='angle' baseUnit='circle'/>
-		<unitQuantity quantity='consumption' baseUnit='cubic-meter-per-meter'/>
-		<unitQuantity quantity='consumption-inverse' baseUnit='meter-per-cubic-meter'/>		
-		<unitQuantity quantity='digital' baseUnit='bit'/>		
-		<unitQuantity quantity='graphics' baseUnit='pixel'/>		
-		<unitQuantity quantity='digital' baseUnit='cycle-per-second'/>		
-		<unitQuantity quantity='portion' baseUnit='portion'/>	
-		<unitQuantity quantity='resolution' baseUnit='pixel-per-meter'/>	
-		<unitQuantity quantity='energy' baseUnit='kilogram-square-meter-second-per-cubic-second'/> <!-- redundant -->			
-		<unitQuantity quantity='pressure' baseUnit='kilogram-meter-per-square-meter-square-second'/> <!-- redundant -->
+		<!--  SI Base Units -->
+		<unitQuantity baseUnit='second' quantity='time'/>
+        <unitQuantity baseUnit='meter' quantity='length'/>
+        <unitQuantity baseUnit='kilogram' quantity='mass'/>
+        <unitQuantity baseUnit='ampere' quantity='electric-current'/>
+        <unitQuantity baseUnit='kelvin' quantity='temperature'/>
+        <unitQuantity baseUnit='mole' quantity='substance-amount'/>
+        <unitQuantity baseUnit='candela' quantity='luminous-intensity'/>
+        
+        <!--  SI Derived Units -->
+        <unitQuantity baseUnit='revolution-per-second' quantity='frequency'/>
+        <unitQuantity baseUnit='revolution' quantity='angle'/>
+        <unitQuantity baseUnit='square-revolution' quantity='solid-angle'/>
+        <unitQuantity baseUnit='kilogram-meter-per-square-second' quantity='force'/>
+        <unitQuantity baseUnit='kilogram-per-meter-square-second' quantity='pressure'/>
+        <unitQuantity baseUnit='kilogram-square-meter-per-square-second' quantity='energy'/>
+        <unitQuantity baseUnit='kilogram-square-meter-per-cubic-second' quantity='power'/>
+        <unitQuantity baseUnit='second-ampere' quantity='electric-charge'/>
+        <unitQuantity baseUnit='kilogram-square-meter-per-cubic-second-ampere' quantity='voltage'/>
+        <unitQuantity baseUnit='pow4-second-square-ampere-per-kilogram-square-meter' quantity='electric-capacitance'/>
+        <unitQuantity baseUnit='kilogram-square-meter-per-cubic-second-square-ampere' quantity='electric-resistance'/>
+        <unitQuantity baseUnit='cubic-second-square-ampere-per-kilogram-square-meter' quantity='electric-conductance'/>
+        <unitQuantity baseUnit='kilogram-square-meter-per-square-second-ampere' quantity='magnetic-flux'/>
+        <unitQuantity baseUnit='kilogram-per-square-second-ampere' quantity='magnetic-induction'/>
+        <unitQuantity baseUnit='kilogram-square-meter-per-square-second-square-ampere' quantity='electric-inductance'/>
+        <unitQuantity baseUnit='square-meter-per-square-second' quantity='dose'/>
+        <unitQuantity baseUnit='mole-per-second' quantity='catalytic-activity'/>
+        <unitQuantity baseUnit='square-meter' quantity='area'/>
+        <unitQuantity baseUnit='cubic-meter' quantity='volume'/>
+        <unitQuantity baseUnit='meter-per-second' quantity='speed'/>
+        <unitQuantity baseUnit='meter-per-square-second' quantity='acceleration'/>
+        <unitQuantity baseUnit='per-meter' quantity='wave-number'/>
+        <unitQuantity baseUnit='kilogram-per-cubic-meter' quantity='mass-density'/>
+        <unitQuantity baseUnit='cubic-meter-per-kilogram' quantity='specific-volume'/>
+        <unitQuantity baseUnit='ampere-per-square-meter' quantity='current-density'/>
+        <unitQuantity baseUnit='ampere-per-meter' quantity='magnetic-field-strength'/>
+        <unitQuantity baseUnit='mole-per-cubic-meter' quantity='concentration'/>
+        <unitQuantity baseUnit='candela-per-square-meter' quantity='luminance'/>
+        <unitQuantity baseUnit='candela-square-meter-per-square-meter' quantity='luminous-flux'/>
+        <unitQuantity baseUnit='kilogram-per-kilogram' quantity='mass-fraction'/>
+        
+        <!-- Additional units -->
+        <unitQuantity baseUnit='kilogram-meter-per-meter-square-second' quantity='torque'/>
+        <unitQuantity baseUnit='year' quantity='year-duration'/>
+        <unitQuantity baseUnit='cubic-meter-per-meter' quantity='consumption'/>
+        <unitQuantity baseUnit='meter-per-cubic-meter' quantity='consumption-inverse'/>
+        <unitQuantity baseUnit='bit' quantity='digital'/>
+        <unitQuantity baseUnit='pixel' quantity='graphics'/>
+        <unitQuantity baseUnit='portion' quantity='portion'/>
+        <unitQuantity baseUnit='pixel-per-meter' quantity='resolution'/>
+
 	</unitQuantities>	
 		<!-- Values where possible from NIST Special Publication 1038 
 		https://www.govinfo.gov/content/pkg/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4/pdf/GOVPUB-C13-f10c2ff9e7af2091314396a2d53213e4.pdf -->
@@ -84,11 +85,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='light-year' target='meter' factor='9460730000000000'/>
 		<convertUnit source='parsec' target='meter' factor='30856780000000000'/>
 		<convertUnit source='g-force' target='meter-per-square-second' factor='gravity'/>
-		<convertUnit source='revolution' target='circle' factor='1'/>
-		<convertUnit source='degree' target='circle' factor='1/360'/>
-		<convertUnit source='arc-minute' target='circle' factor='1/360*60'/>
-		<convertUnit source='arc-second' target='circle' factor='1/360*60*60'/>
-		<convertUnit source='radian' target='circle' factor='1/2*PI'/>
+		<convertUnit source='degree' target='revolution' factor='1/360'/>
+		<convertUnit source='arc-minute' target='revolution' factor='1/360*60'/>
+		<convertUnit source='arc-second' target='revolution' factor='1/360*60*60'/>
+		<convertUnit source='radian' target='revolution' factor='1/2*PI'/>
 		<convertUnit source='mole' target='item' factor='6.02214076E+23'/>
 		<convertUnit source='percent' target='portion' factor='1/100'/>
 		<convertUnit source='permille' target='portion' factor='1/1000'/>
@@ -96,7 +96,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<convertUnit source='calorie' target='kilogram-square-meter-per-square-second' factor='4.184'/>
 		<convertUnit source='electronvolt' target='kilogram-square-meter-per-square-second' factor='1.602177E-19'/>
 		<convertUnit source='foodcalorie' target='kilogram-square-meter-per-square-second' factor='4184'/>
-		<convertUnit source='hertz' target='cycle-per-second' factor='1'/>
+		<convertUnit source='hertz' target='revolution-per-second' factor='1'/>
 		<convertUnit source='astronomical-unit' target='meter' factor='149597900000'/>
 		<convertUnit source='acre' target='square-meter' factor='ft2m^2 * 43560'/>
 		<convertUnit source='therm-us' target='kilogram-square-meter-per-square-second' factor='105506000'/>

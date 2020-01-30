@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -41,7 +42,9 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.TreeMultimap;
 import com.ibm.icu.dev.test.TestFmwk;
 import com.ibm.icu.util.Output;
@@ -331,7 +334,7 @@ public class TestUnits extends TestFmwk {
                 classToId.put(s, id);
             }
         }
-
+        
         // check not overlapping
         // now handled by TestParseUnit, but we might revive a modified version of this.
 //        for (int i = 0; i < equivClasses.size(); ++i) {
@@ -377,7 +380,6 @@ public class TestUnits extends TestFmwk {
     }
 
     public void TestBaseUnits() {
-        UnitConverter converter = SDI.getUnitConverter();
         Splitter barSplitter = Splitter.on('-');
         for (String unit : converter.baseUnits()) {
             for (String piece : barSplitter.split(unit)) {
@@ -386,27 +388,31 @@ public class TestUnits extends TestFmwk {
         }
     }
 
+    static final UnitConverter converter = SDI.getUnitConverter();
+
     public void TestUnitId() {
-        UnitConverter converter = SDI.getUnitConverter();
-        for (String canonicalUnit : converter.simpleToBaseUnits().values()) {
-            UnitId unitId = converter.new UnitId().add(canonicalUnit, true, 1);
+        for (Entry<String, String> entry : converter.simpleToBaseUnits().entrySet()) {
+            String simple = entry.getKey();
+            String canonicalUnit = entry.getValue();
+            UnitId unitId = converter.createUnitId(canonicalUnit);
             String output = unitId.toString();
-            if (!assertEquals("targets should be in canonical form", 
+            if (!assertEquals(simple + ": targets should be in canonical form", 
                 output, canonicalUnit)) {
                 // for debugging
-                converter.new UnitId().add(canonicalUnit, true, 1);
+                converter.createUnitId(canonicalUnit);
                 unitId.toString();
             }
         }
         for (Entry<String, String> baseUnitToQuantity : SDI.getBaseUnitToQuantity().entrySet()) {
             String baseUnit = baseUnitToQuantity.getKey();
+            String quantity = baseUnitToQuantity.getValue();
             try {
-                UnitId unitId = converter.new UnitId().add(baseUnit, true, 1);
+                UnitId unitId = converter.createUnitId(baseUnit);
                 String output = unitId.toString();
-                if (!assertEquals("targets should be in canonical form", 
+                if (!assertEquals(quantity + ": targets should be in canonical form", 
                     output, baseUnit)) {
                     // for debugging
-                    converter.new UnitId().add(baseUnit, true, 1);
+                    converter.createUnitId(baseUnit);
                     unitId.toString();
                 }
             } catch (Exception e) {
@@ -416,7 +422,6 @@ public class TestUnits extends TestFmwk {
     }
 
     public void TestParseUnit() {
-        UnitConverter converter = SDI.getUnitConverter();
         Output<String> compoundBaseUnit = new Output<>();
         String[][] tests = {
             {"kilometer-pound-per-hour", "kilogram-meter-per-second", "45359237/360000000"},
@@ -466,7 +471,7 @@ public class TestUnits extends TestFmwk {
         }
     }
 
-    static final Set<String> NOT_CONVERTABLE = ImmutableSet.of("generic", "em", "lux");
+    static final Set<String> NOT_CONVERTABLE = ImmutableSet.of("generic", "em");
 
     private void checkUnitConvertability(UnitConverter converter, Output<String> compoundBaseUnit, 
         Set<String> badUnits, Set<String> noQuantity, String type, String unit, 
@@ -498,7 +503,7 @@ public class TestUnits extends TestFmwk {
             if (unitInfo == null) {
                 badUnits.add(unit);
             } else if (SHOW_DATA){
-                String quantity = toQuantity.get(compoundBaseUnit.value);
+                String quantity = getQuantity(compoundBaseUnit, toQuantity);
                 if (quantity == null) {
                     noQuantity.add(compoundBaseUnit.value);
                 }
@@ -515,6 +520,19 @@ public class TestUnits extends TestFmwk {
                     );
             }
         }
+    }
+
+    private String getQuantity(Output<String> compoundBaseUnit, Map<String, String> toQuantity) {
+        String result = toQuantity.get(compoundBaseUnit.value);
+        if (result != null) {
+            return result;
+        }
+        UnitId unitId = converter.createUnitId(compoundBaseUnit.value);
+        UnitId resolved = unitId.resolve();
+        if (unitId.equals(resolved)) {
+            return null;
+        }
+        return toQuantity.get(resolved.toString());
     }
 
     public void TestRational() {
@@ -641,7 +659,6 @@ public class TestUnits extends TestFmwk {
         }
         System.out.println("oddities: " + oddities);
 
-        UnitConverter converter = SDI.getUnitConverter();
         Set<String> canConvert = new TreeSet<>(converter.canConvert());
         Set<String> cores = new TreeSet<>(typeToCore.values());
 
@@ -650,5 +667,65 @@ public class TestUnits extends TestFmwk {
         assertEquals("Units we can't convert", Collections.EMPTY_SET, cores);
         canConvert.removeAll(typeToCore.values());
         assertEquals("Conversions for invalid units", Collections.EMPTY_SET, canConvert);
+    }
+    
+    public void TestQuantities() {
+        // put quantities in order
+        Multimap<String,String> reverse = LinkedHashMultimap.create();
+        
+        Multimaps.invertFrom(Multimaps.forMap(SDI.getBaseUnitToQuantity()), reverse);
+        for ( Entry<String, Collection<String>> entry : reverse.asMap().entrySet()) {
+            assertEquals(entry.toString(), 1, entry.getValue().size());
+        }
+        
+        Map<String, String> baseToQuantity = SDI.getBaseUnitToQuantity();
+        TreeMultimap<String, String> quantityToConvertible = TreeMultimap.create();
+        Set<String> missing = new TreeSet<>(CORE_TO_TYPE.keySet());
+        missing.removeAll(NOT_CONVERTABLE);
+        
+        for (Entry<String, String> entry : baseToQuantity.entrySet()) {
+            String baseUnit = entry.getKey();
+            String quantity = entry.getValue();
+            Set<String> convertible = converter.canConvertBetween(baseUnit);
+            missing.removeAll(convertible);
+            quantityToConvertible.putAll(quantity, convertible);
+        }
+        
+        // handle missing
+        Output<String> metricUnit = new Output<>();
+        for (String missingUnit : ImmutableSet.copyOf(missing)) {
+            converter.parseUnitId(missingUnit, metricUnit);
+            String quantity = baseToQuantity.get(metricUnit.value);
+            if (quantity == null) {
+                UnitId resolved = converter.createUnitId(metricUnit.value).resolve();
+                quantity = baseToQuantity.get(resolved.toString());
+            }
+            if (quantity != null) {
+                quantityToConvertible.put(quantity, missingUnit);
+                missing.remove(missingUnit);
+            } else {
+                int debug = 0;
+            }
+        }
+        assertEquals("all units have quantity", Collections.emptySet(), missing);
+        
+        if (SHOW_DATA) {
+            System.out.println();
+            for (Entry<String, String> entry : SDI.getBaseUnitToQuantity().entrySet()) {
+                String baseUnit = entry.getKey();
+                String quantity = entry.getValue();
+                System.out.println("        <unitQuantity"
+                    + " baseUnit='" + baseUnit + "'"
+                    + " quantity='" + quantity + "'"
+                    + "/>");
+            }
+            System.out.println();
+            System.out.println("Quantities");
+            for (Entry<String, Collection<String>> entry : quantityToConvertible.asMap().entrySet()) {
+                String quantity = entry.getKey();
+                Collection<String> convertible = entry.getValue();
+                System.out.println(quantity + "\t" + convertible);
+            }
+        }
     }
 }

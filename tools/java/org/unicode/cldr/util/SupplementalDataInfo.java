@@ -910,7 +910,7 @@ public class SupplementalDataInfo {
     public Multimap<String, String> languageGroups = TreeMultimap.create();
     
     public RationalParser rationalParser = new RationalParser();
-    public Map<String,String> baseUnitToQuantity = new TreeMap<>();
+    public Map<String,String> baseUnitToQuantity = new LinkedHashMap<>();
     public UnitConverter unitConverter = new UnitConverter(rationalParser);
 
     public enum MeasurementType {

@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -373,7 +374,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
                     }
                 }
                 // create cleaned up target unitid
-                outputUnit.add(unit, inNumerator, power);
+                outputUnit.add(continuations, unit, inNumerator, power);
                 power = 1;
             }
         }
@@ -396,9 +397,9 @@ public class UnitConverter implements Freezable<UnitConverter> {
         "item", 
         "pixel", 
         "em", 
-        "circle",
-        "cycle",
-        "portion");
+        "revolution",
+        "portion"
+        );
     
     public static final MapComparator<String> UNIT_COMPARATOR = new MapComparator<>(BASE_UNITS)
         .setErrorOnMissing(true)
@@ -407,18 +408,20 @@ public class UnitConverter implements Freezable<UnitConverter> {
     public static final Set<String> BASE_UNIT_PARTS = ImmutableSet.<String>builder()
         .add("per").add("square").add("cubic").addAll(BASE_UNITS)
         .build();
-
+    
     /** 
      * Only handles the canonical units; no kilo-, only normalized, etc.
      * @author markdavis
      *
      */
-    public class UnitId implements Freezable<UnitId> {
+    public static class UnitId implements Freezable<UnitId> {
         private Map<String, Integer> numUnitsToPowers = new TreeMap<>(UNIT_COMPARATOR);
         private Map<String, Integer> denUnitsToPowers = new TreeMap<>(UNIT_COMPARATOR);
         private boolean frozen = false;
 
-        public UnitId add(String compoundUnit, boolean groupInNumerator, int groupPower) {
+        private UnitId() {} // 
+        
+        private UnitId add(Multimap<String, Continuation> continuations, String compoundUnit, boolean groupInNumerator, int groupPower) {
             if (frozen) {
                 throw new UnsupportedOperationException("Object is frozen.");
             }
@@ -487,18 +490,59 @@ public class UnitConverter implements Freezable<UnitConverter> {
             return builder.toString();
         }
         @Override
+        public boolean equals(Object obj) {
+            UnitId other = (UnitId) obj;
+            return numUnitsToPowers.equals(other.numUnitsToPowers) 
+                && denUnitsToPowers.equals(other.denUnitsToPowers);
+        }
+        @Override
+        public int hashCode() {
+            return Objects.hash(numUnitsToPowers, denUnitsToPowers);
+        }
+        @Override
         public boolean isFrozen() {
             return frozen;
         }
         @Override
         public UnitId freeze() {
             frozen = true;
+            numUnitsToPowers = ImmutableMap.copyOf(numUnitsToPowers);
+            denUnitsToPowers = ImmutableMap.copyOf(denUnitsToPowers);
             return this;
         }
         @Override
         public UnitId cloneAsThawed() {
             throw new UnsupportedOperationException();
         }
+
+        public UnitId resolve() {
+            UnitId result = new UnitId();
+            result.numUnitsToPowers.putAll(numUnitsToPowers);
+            result.denUnitsToPowers.putAll(denUnitsToPowers);
+            for (Entry<String, Integer> entry : numUnitsToPowers.entrySet()) {
+                final String key = entry.getKey();
+                Integer denPower = denUnitsToPowers.get(key);
+                if (denPower == null) {
+                    continue;
+                }
+                int power = entry.getValue() - denPower;
+                if (power > 0) {
+                    result.numUnitsToPowers.put(key, power);
+                    result.denUnitsToPowers.remove(key);
+                } else if (power < 0) {
+                    result.numUnitsToPowers.remove(key);
+                    result.denUnitsToPowers.put(key, -power);
+                } else { // 0, so
+                    result.numUnitsToPowers.remove(key);
+                    result.denUnitsToPowers.remove(key);
+                }
+            }
+            return result.freeze();
+        }
+    }
+
+    public final UnitId createUnitId(String unit) {
+        return new UnitId().add(continuations, unit, true, 1).freeze();
     }
 
     public boolean isBaseUnit(String unit) {
