@@ -52,13 +52,15 @@ import com.ibm.icu.util.Output;
 public class TestUnits extends TestFmwk {
     private static final boolean SHOW_DATA = CldrUtility.getProperty("TestUnits:SHOW_DATA", false);
 
-    private static final SupplementalDataInfo SDI = CLDRConfig.getInstance().getSupplementalDataInfo();
-
-    CLDRConfig info = CLDRConfig.getInstance();
+    private static final CLDRConfig info = CLDRConfig.getInstance();
+    private static final SupplementalDataInfo SDI = info.getSupplementalDataInfo();
+    static final UnitConverter converter = SDI.getUnitConverter();
 
     public static void main(String[] args) {
         new TestUnits().run(args);
     }
+
+    private Map<String, String> BASE_UNIT_TO_QUANTITY = converter.getBaseUnitToQuantity();
 
     public void TestSpaceInNarrowUnits() {
         final CLDRFile english = CLDRConfig.getInstance().getEnglish();
@@ -315,7 +317,8 @@ public class TestUnits extends TestFmwk {
             String sourceUnit = test[0].toString();
             String targetUnit = test[2].toString();
             int numerator = (Integer) test[1];
-            assertEquals(sourceUnit + " to " + targetUnit, Rational.of(numerator, 1), converter.convert(Rational.ONE, sourceUnit, targetUnit));
+            final Rational convert = converter.convert(Rational.ONE, sourceUnit, targetUnit);
+            assertEquals(sourceUnit + " to " + targetUnit, Rational.of(numerator, 1), convert);
         }
 
         // test conversions are disjoint
@@ -388,12 +391,10 @@ public class TestUnits extends TestFmwk {
         }
     }
 
-    static final UnitConverter converter = SDI.getUnitConverter();
-
     public void TestUnitId() {
-        for (Entry<String, String> entry : converter.simpleToBaseUnits().entrySet()) {
-            String simple = entry.getKey();
-            String canonicalUnit = entry.getValue();
+        
+        for (String simple : converter.getSimpleUnits()) {
+            String canonicalUnit = converter.getBaseUnit(simple);
             UnitId unitId = converter.createUnitId(canonicalUnit);
             String output = unitId.toString();
             if (!assertEquals(simple + ": targets should be in canonical form", 
@@ -403,7 +404,7 @@ public class TestUnits extends TestFmwk {
                 unitId.toString();
             }
         }
-        for (Entry<String, String> baseUnitToQuantity : SDI.getBaseUnitToQuantity().entrySet()) {
+        for (Entry<String, String> baseUnitToQuantity : BASE_UNIT_TO_QUANTITY.entrySet()) {
             String baseUnit = baseUnitToQuantity.getKey();
             String quantity = baseUnitToQuantity.getValue();
             try {
@@ -419,6 +420,17 @@ public class TestUnits extends TestFmwk {
                 errln("Can't convert baseUnit: " + baseUnit);
             }
         }
+        
+        for (String baseUnit : CORE_TO_TYPE.keySet()) {
+            try {
+                UnitId unitId = converter.createUnitId(baseUnit);
+                assertNotNull("Can't parse baseUnit: " + baseUnit, unitId);
+            } catch (Exception e) {
+                UnitId unitId = converter.createUnitId(baseUnit); // for debugging
+                errln("Can't parse baseUnit: " + baseUnit);
+            }
+        }
+
     }
 
     public void TestParseUnit() {
@@ -471,13 +483,13 @@ public class TestUnits extends TestFmwk {
         }
     }
 
-    static final Set<String> NOT_CONVERTABLE = ImmutableSet.of("generic", "em");
+    static final Set<String> NOT_CONVERTABLE = ImmutableSet.of("generic");
 
     private void checkUnitConvertability(UnitConverter converter, Output<String> compoundBaseUnit, 
         Set<String> badUnits, Set<String> noQuantity, String type, String unit, 
         Multimap<Pair<String, Double>, String> testPrintout) {
 
-        Map<String, String> toQuantity = SDI.getBaseUnitToQuantity();
+        Map<String, String> toQuantity = converter.getBaseUnitToQuantity();
 
         if (unit.equals("liter-per-100kilometers")) {
             int debug = 0;
@@ -671,14 +683,14 @@ public class TestUnits extends TestFmwk {
     
     public void TestQuantities() {
         // put quantities in order
-        Multimap<String,String> reverse = LinkedHashMultimap.create();
+        Multimap<String,String> quantityToBaseUnits = LinkedHashMultimap.create();
         
-        Multimaps.invertFrom(Multimaps.forMap(SDI.getBaseUnitToQuantity()), reverse);
-        for ( Entry<String, Collection<String>> entry : reverse.asMap().entrySet()) {
+        Multimaps.invertFrom(Multimaps.forMap(BASE_UNIT_TO_QUANTITY ), quantityToBaseUnits);
+        for ( Entry<String, Collection<String>> entry : quantityToBaseUnits.asMap().entrySet()) {
             assertEquals(entry.toString(), 1, entry.getValue().size());
         }
         
-        Map<String, String> baseToQuantity = SDI.getBaseUnitToQuantity();
+        Map<String, String> baseToQuantity = BASE_UNIT_TO_QUANTITY;
         TreeMultimap<String, String> quantityToConvertible = TreeMultimap.create();
         Set<String> missing = new TreeSet<>(CORE_TO_TYPE.keySet());
         missing.removeAll(NOT_CONVERTABLE);
@@ -711,7 +723,7 @@ public class TestUnits extends TestFmwk {
         
         if (SHOW_DATA) {
             System.out.println();
-            for (Entry<String, String> entry : SDI.getBaseUnitToQuantity().entrySet()) {
+            for (Entry<String, String> entry : BASE_UNIT_TO_QUANTITY.entrySet()) {
                 String baseUnit = entry.getKey();
                 String quantity = entry.getValue();
                 System.out.println("        <unitQuantity"
@@ -726,6 +738,19 @@ public class TestUnits extends TestFmwk {
                 Collection<String> convertible = entry.getValue();
                 System.out.println(quantity + "\t" + convertible);
             }
+        }
+    }
+    
+    public void TestOrder() {
+        System.out.println();
+        for (String s : UnitConverter.BASE_UNITS) {
+           String quantity = BASE_UNIT_TO_QUANTITY.get(s);
+           System.out.println("\"" + quantity + "\",");
+        }
+        for (String unit : CORE_TO_TYPE.keySet()) {
+            Output<String> baseUnit = new Output<>();
+            UnitInfo unitInfo = converter.getUnitInfo(unit, baseUnit);
+            String quantity = BASE_UNIT_TO_QUANTITY.get(baseUnit.value);
         }
     }
 }

@@ -3,15 +3,15 @@ package org.unicode.cldr.util;
 import java.math.MathContext;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.unicode.cldr.util.Rational.RationalParser;
 
@@ -20,8 +20,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSet.Builder;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
+import com.ibm.icu.impl.Row.R2;
 import com.ibm.icu.util.Freezable;
 import com.ibm.icu.util.Output;
 
@@ -31,12 +34,56 @@ public class UnitConverter implements Freezable<UnitConverter> {
 
     final RationalParser rationalParser;
 
-    Map<String, Map<String,UnitInfo>> sourceToTargetToInfo = new TreeMap<>();
-    Map<String, String> toBaseUnit = new TreeMap<>();
-    Set<String> baseUnits;
-    Multimap<String, Continuation> continuations = TreeMultimap.create();
+    private Map<String,String> baseUnitToQuantity = new LinkedHashMap<>();
+    private Map<String, TargetInfo> sourceToTargetInfo = new TreeMap<>();
+    private Multimap<String, String> quantityToSimpleUnits = LinkedHashMultimap.create();
+    private Set<String> baseUnits;
+    private Multimap<String, Continuation> continuations = TreeMultimap.create();
+    private MapComparator<String> quantityComparator; 
+    private Map<String,String> fixDenormalized;
 
     private boolean frozen = false;
+
+    /** Warning: ordering is important; determines the normalized output */
+    public static final Set<String> BASE_UNITS = ImmutableSet.of(
+        "candela",
+        "kilogram", 
+        "meter", 
+        "second",
+        "ampere", 
+        "kelvin",
+        // non-SI
+        "year", 
+        "bit", 
+        "item", 
+        "pixel", 
+        "em", 
+        "revolution",
+        "portion"
+        );
+
+    private static final Set<String> QUANTITIES = ImmutableSet.of(
+        "luminous-intensity",
+        "mass",
+        "length",
+        "time",
+        "year-duration",
+        "electric-current",
+        "temperature",
+        "substance-amount",
+        "angle",
+        "portion",
+        "digital",
+        "graphics"
+        );
+
+    public void addQuantityInfo(String baseUnit, String quantity) {
+        if (baseUnitToQuantity.containsKey(baseUnit)) {
+            throw new IllegalArgumentException();
+        }
+        baseUnitToQuantity.put(baseUnit, quantity);
+        quantityToSimpleUnits.put(quantity, baseUnit);
+    }
 
     @Override
     public boolean isFrozen() {
@@ -47,12 +94,17 @@ public class UnitConverter implements Freezable<UnitConverter> {
     public UnitConverter freeze() {
         frozen = true;
         rationalParser.freeze();
-        sourceToTargetToInfo = ImmutableMap.copyOf(sourceToTargetToInfo);
-        toBaseUnit = ImmutableMap.copyOf(toBaseUnit);
-        baseUnits = ImmutableSet.<String>builder()
-            .addAll(BASE_UNITS)
-            .addAll(toBaseUnit.values())
-            .build();
+        sourceToTargetInfo = ImmutableMap.copyOf(sourceToTargetInfo);
+        quantityToSimpleUnits = ImmutableMultimap.copyOf(quantityToSimpleUnits);
+        Builder<String> builder = ImmutableSet.<String>builder()
+            .addAll(BASE_UNITS);
+        for (TargetInfo s : sourceToTargetInfo.values()) {
+            builder.add(s.target);
+        }
+        baseUnits = builder.build();
+        for (String denormalized : fixDenormalized.keySet()) {
+            Continuation.addIfNeeded(denormalized, continuations);
+        }
         continuations = ImmutableMultimap.copyOf(continuations);
         return this;
     }
@@ -76,12 +128,16 @@ public class UnitConverter implements Freezable<UnitConverter> {
             this.reciprocal = reciprocal;
         }
 
-        /** For now, just convert with doubles */
         public Rational convert(Rational source) {
             if (reciprocal) {
                 source = source.reciprocal();
             }
             return source.multiply(factor).add(offset);
+        }
+
+        public Rational convertBackwards(Rational source) {
+            Rational result = source.subtract(offset).divide(factor);
+            return (reciprocal ? result.reciprocal() : result);
         }
 
         public UnitInfo invert() {
@@ -107,6 +163,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
                     (offset.compareTo(Rational.ZERO) < 0 ? " - " : " - ")
                     + offset.toBigDecimal(MathContext.DECIMAL64).abs());
         }
+
     }
 
     static class Continuation implements Comparable<Continuation> {
@@ -206,93 +263,99 @@ public class UnitConverter implements Freezable<UnitConverter> {
                     reciprocal == null ? false : reciprocal.equalsIgnoreCase("true") ? true : false);
 
         addToSourceToTarget(source, target, info);
-        addToSourceToTarget(target, source, info.invert());
-        toBaseUnit.put(source, target);
         Continuation.addIfNeeded(source, continuations);
     }
 
+    static class TargetInfo {
+        final String target;
+        final UnitInfo unitInfo;
+        public TargetInfo(String target, UnitInfo unitInfo) {
+            this.target = target;
+            this.unitInfo = unitInfo;
+        }
+        @Override
+        public String toString() {
+            return unitInfo + " (" + target + ")";
+        }
+    }
     private void addToSourceToTarget(String source, String target, UnitInfo info) {
-        Map<String, UnitInfo> targetToInfo = sourceToTargetToInfo.get(source);
-        if (targetToInfo == null) {
-            sourceToTargetToInfo.put(source, targetToInfo = new TreeMap<>());
+        if (sourceToTargetInfo.isEmpty()) {
+            baseUnitToQuantity = ImmutableMap.copyOf(baseUnitToQuantity);
+            quantityComparator = new MapComparator<>(baseUnitToQuantity.values()).freeze();
+        } else if (sourceToTargetInfo.containsKey(source)) {
+            throw new IllegalArgumentException("Duplicate source: " + source + ", " + target);
         }
-        if (targetToInfo.containsKey(target)) {
-            throw new IllegalArgumentException("Duplicate source/target: " + source + ", " + target);
+        sourceToTargetInfo.put(source, new TargetInfo(target, info));
+        String targetQuantity = baseUnitToQuantity.get(target);
+        if (targetQuantity == null) {
+            throw new IllegalArgumentException();
         }
-        targetToInfo.put(target, info);
+        quantityToSimpleUnits.put(targetQuantity, source);
     }
 
     public Set<String> canConvertBetween(String unit) {
-        Set<String> result = new TreeSet<>();
-        Map<String, UnitInfo> targetToInfo = sourceToTargetToInfo.get(unit);
-        if (targetToInfo == null) {
+        TargetInfo targetInfo = sourceToTargetInfo.get(unit);
+        if (targetInfo == null) {
             return Collections.emptySet();
         }
-        result.addAll(targetToInfo.keySet());
-        for (String pivot : targetToInfo.keySet()) {
-            Map<String, UnitInfo> pivotToInfo = sourceToTargetToInfo.get(pivot);
-            result.addAll(pivotToInfo.keySet());
-        }
-        return result;
+        String quantity = baseUnitToQuantity.get(targetInfo.target);
+        return ImmutableSet.copyOf(quantityToSimpleUnits.get(quantity));
     }
 
     public Set<String> canConvert() {
-        return sourceToTargetToInfo.keySet();
+        return sourceToTargetInfo.keySet();
     }
-
-    public Map<String, String> simpleToBaseUnits() {
-        return toBaseUnit;
-    }
-
 
     public Rational convert(Rational source, String sourceUnit, String targetUnit) {
-        Map<String, UnitInfo> targetToInfo = sourceToTargetToInfo.get(sourceUnit);
-        if (targetToInfo == null) {
+        if (sourceUnit.equals(targetUnit)) {
+            return source;
+        }
+        TargetInfo toPivotInfo = sourceToTargetInfo.get(sourceUnit);
+        if (toPivotInfo == null) {
             return Rational.NaN;
         }
-        UnitInfo info = targetToInfo.get(targetUnit); 
-        if (info != null) {
-            return info.convert(source);
-        }
-        // try pivot
-        Map<String, UnitInfo> sourceToInfo = sourceToTargetToInfo.get(targetUnit);
-        if (sourceToInfo == null) {
+        TargetInfo fromPivotInfo = sourceToTargetInfo.get(targetUnit);
+        if (fromPivotInfo == null) {
             return Rational.NaN;
         }
-        HashSet<String> pivots = new HashSet<>(targetToInfo.keySet());
-        pivots.retainAll(sourceToInfo.keySet());
-        if (pivots.isEmpty()) {
+        if (!toPivotInfo.target.equals(fromPivotInfo.target)) {
             return Rational.NaN;
         }
-        String pivot = pivots.iterator().next();
-        info = targetToInfo.get(pivot);
-        Rational temp = info.convert(source);
-
-        Map<String, UnitInfo> pivotToInfo = sourceToTargetToInfo.get(pivot);
-        UnitInfo info2 = pivotToInfo.get(targetUnit);
-        return info2.convert(temp);
+        Rational toPivot = toPivotInfo.unitInfo.convert(source);
+        Rational fromPivot = fromPivotInfo.unitInfo.convertBackwards(toPivot);
+        return fromPivot;
     }
 
     // TODO fix to guarantee single mapping
 
     public UnitInfo getUnitInfo(String sourceUnit, Output<String> baseUnit) {
         if (isBaseUnit(sourceUnit)) {
-            return null;
+            baseUnit.value = sourceUnit;
+            return UnitInfo.IDENTITY;
         }
-        Map<String, UnitInfo> targetToInfo = sourceToTargetToInfo.get(sourceUnit);
+        TargetInfo targetToInfo = sourceToTargetInfo.get(sourceUnit);
         if (targetToInfo == null) {
             return null;
         }
-        Entry<String, UnitInfo> data = targetToInfo.entrySet().iterator().next();
-        baseUnit.value = data.getKey();
-        return data.getValue();
+        baseUnit.value = targetToInfo.target;
+        return targetToInfo.unitInfo;
     }
 
-    static final ImmutableMap<String, String> FIX_DENORMALIZED = ImmutableMap.of(
-        "meter-per-second-squared", "meter-per-square-second",
-        "liter-per-100kilometers", "liter-per-100-kilometer",
-        "pound-foot", "pound-force-foot",
-        "pound-per-square-inch", "pound-force-per-square-inch");
+    public String getBaseUnit(String simpleUnit) {
+        TargetInfo targetToInfo = sourceToTargetInfo.get(simpleUnit);
+        if (targetToInfo == null) {
+            return null;
+        }
+        return targetToInfo.target;
+    }
+
+
+    // final Map<String, String> FIX_DENORMALIZED = fixDenormalized;
+//        ImmutableMap.of(
+//        "meter-per-second-squared", "meter-per-square-second",
+//        "liter-per-100kilometers", "liter-per-100-kilometer",
+//        "pound-foot", "pound-force-foot",
+//        "pound-per-square-inch", "pound-force-per-square-inch");
 
     /**
      * Takes a derived unit id, and produces the equivalent derived base unit id and UnitInfo to convert to it
@@ -313,7 +376,7 @@ public class UnitConverter implements Freezable<UnitConverter> {
 
         Output<Rational> deprefix = new Output<>();
 
-        String fixed = FIX_DENORMALIZED.get(derivedUnit);
+        String fixed = fixDenormalized.get(derivedUnit); // TODO replace derivation of FIX_...
         if (fixed != null) {
             derivedUnit = fixed;
         }
@@ -340,30 +403,27 @@ public class UnitConverter implements Freezable<UnitConverter> {
                     throw new IllegalArgumentException("Can't have power of per");
                 }
                 inNumerator = false; // ignore multiples
-            } else if ('9' >= unit.charAt(0)) {
-                if (power != 1) {
-                    throw new IllegalArgumentException("Can't have power of " + unit);
-                }
-                Rational factor = Rational.of(Integer.parseInt(unit));
-                if (inNumerator) {
-                    numerator = numerator.multiply(factor);
-                } else {
-                    denominator = denominator.multiply(factor);
-                }
+//            } else if ('9' >= unit.charAt(0)) {
+//                if (power != 1) {
+//                    throw new IllegalArgumentException("Can't have power of " + unit);
+//                }
+//                Rational factor = Rational.of(Integer.parseInt(unit));
+//                if (inNumerator) {
+//                    numerator = numerator.multiply(factor);
+//                } else {
+//                    denominator = denominator.multiply(factor);
+//                }
             } else {
                 // kilo etc.
-                Rational value = Rational.ONE;
-                String deprefixed = stripPrefix(unit, deprefix);
-                if (deprefixed != null) {
-                    unit = deprefixed;
-                    value = deprefix.value;
-                }
-                if (!isBaseUnit(unit)) {
-                    String baseUnit = getBaseUnit(unit);
-                    if (baseUnit == null) {
+                unit = stripPrefix(unit, deprefix);
+                Rational value = deprefix.value;
+                if (!isSimpleBaseUnit(unit)) {
+                    TargetInfo info = sourceToTargetInfo.get(unit);
+                    if (info == null) {
                         return null; // can't convert
                     }
-                    value = convert(value, unit, baseUnit);
+                    String baseUnit = info.target;
+                    value = info.unitInfo.convert(value);
                     unit = baseUnit;
                 }
                 for (int p = 1; p <= power; ++p) {
@@ -382,45 +442,66 @@ public class UnitConverter implements Freezable<UnitConverter> {
         return new UnitInfo(numerator.divide(denominator), Rational.ZERO, false); // fix parameters 2,3 later
     }
 
-    /** Warning: ordering is important; determines the normalized output */
-    public static final Set<String> BASE_UNITS = ImmutableSet.of(
-        "candela",
-        "kilogram", 
-        "meter", 
-        "second",
-        "ampere", 
-        "kelvin",
-        "mole", 
-        // non-SI
-        "year", 
-        "bit", 
-        "item", 
-        "pixel", 
-        "em", 
-        "revolution",
-        "portion"
-        );
-    
-    public static final MapComparator<String> UNIT_COMPARATOR = new MapComparator<>(BASE_UNITS)
+
+    /** Only for use for simple base unit comparison */
+    private class UnitComparator implements Comparator<String>{
+        // TODO, use order in units.xml
+
+        @Override
+        public int compare(String o1, String o2) {
+            if (o1.equals(o2)) {
+                return 0;
+            }
+            Output<Rational> deprefix1 = new Output<>();
+            o1 = stripPrefix(o1, deprefix1);
+            TargetInfo targetAndInfo1 = sourceToTargetInfo.get(o1);
+            String quantity1 = baseUnitToQuantity.get(targetAndInfo1.target);
+
+            Output<Rational> deprefix2 = new Output<>();
+            o2 = stripPrefix(o2, deprefix2);
+            TargetInfo targetAndInfo2 = sourceToTargetInfo.get(o2);
+            String quantity2 = baseUnitToQuantity.get(targetAndInfo2.target);
+
+            int diff;
+            if (0 != (diff = quantityComparator.compare(quantity1, quantity2))) {
+                return diff;
+            }
+            Rational factor1 = targetAndInfo1.unitInfo.factor.multiply(deprefix1.value);
+            Rational factor2 = targetAndInfo2.unitInfo.factor.multiply(deprefix2.value);
+            if (0 != (diff = factor1.compareTo(factor2))) {
+                return diff;
+            }
+            return o1.compareTo(o2);
+        }
+    };
+
+    Comparator<String> UNIT_COMPARATOR = new UnitComparator();
+
+//    public static final MapComparator<String> UNIT_COMPARATOR = new MapComparator<>(BASE_UNITS)
+//        .setSortBeforeOthers(true)
+//        .setErrorOnMissing(false)
+//        .freeze();
+
+    public static final MapComparator<String> QUANTITY_COMPARATOR = new MapComparator<>(QUANTITIES)
         .setErrorOnMissing(true)
         .freeze();
 
     public static final Set<String> BASE_UNIT_PARTS = ImmutableSet.<String>builder()
         .add("per").add("square").add("cubic").addAll(BASE_UNITS)
         .build();
-    
+
     /** 
      * Only handles the canonical units; no kilo-, only normalized, etc.
      * @author markdavis
      *
      */
-    public static class UnitId implements Freezable<UnitId> {
+    public class UnitId implements Freezable<UnitId> {
         private Map<String, Integer> numUnitsToPowers = new TreeMap<>(UNIT_COMPARATOR);
         private Map<String, Integer> denUnitsToPowers = new TreeMap<>(UNIT_COMPARATOR);
         private boolean frozen = false;
 
         private UnitId() {} // 
-        
+
         private UnitId add(Multimap<String, Continuation> continuations, String compoundUnit, boolean groupInNumerator, int groupPower) {
             if (frozen) {
                 throw new UnsupportedOperationException("Object is frozen.");
@@ -549,6 +630,10 @@ public class UnitConverter implements Freezable<UnitConverter> {
         return baseUnits.contains(unit);
     }
 
+    public boolean isSimpleBaseUnit(String unit) {
+        return BASE_UNITS.contains(unit);
+    }
+
     public Set<String> baseUnits() {
         return baseUnits;
     }
@@ -577,8 +662,20 @@ public class UnitConverter implements Freezable<UnitConverter> {
         .put("yotta", Rational.pow10(24))        
         .build();
 
+    static final Set<String> SKIP_PREFIX = ImmutableSet.of(
+        "millimeter-of-mercury", 
+        "kilogram"
+        );
+
+    /** 
+     * If there is no prefix, return the unit and Rational.ONE.
+     * If there is a prefix return the unit (with prefix stripped) and the prefix factor 
+     * */
     private String stripPrefix(String unit, Output<Rational> deprefix) {
-        deprefix.value = null;
+        deprefix.value = Rational.ONE;
+        if (SKIP_PREFIX.contains(unit)) {
+            return unit;
+        }
 
         for (Entry<String, Rational> entry : PREFIXES.entrySet()) {
             String prefix = entry.getKey();
@@ -587,11 +684,24 @@ public class UnitConverter implements Freezable<UnitConverter> {
                 return unit.substring(prefix.length());
             }
         }
-        return null;
+        return unit;
     }
 
-    public String getBaseUnit(String item) {
-        return toBaseUnit.get(item);
+    public Map<String, String> getBaseUnitToQuantity() {
+        return baseUnitToQuantity;
     }
 
+    public Set<String> getSimpleUnits() {
+        return sourceToTargetInfo.keySet();
+    }
+
+    public void addAliases(Map<String, R2<List<String>, String>> tagToReplacement) {
+        fixDenormalized = new TreeMap<>();
+        for (Entry<String, R2<List<String>, String>> entry : tagToReplacement.entrySet()) {
+            final String badCode = entry.getKey();
+            final List<String> replacements = entry.getValue().get0();
+            fixDenormalized.put(badCode, replacements.iterator().next());
+        }
+        fixDenormalized = ImmutableMap.copyOf(fixDenormalized);
+    }
 }

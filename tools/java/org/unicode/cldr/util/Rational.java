@@ -160,6 +160,15 @@ public final class Rational implements Comparable<Rational> {
             );
     }
 
+    public Rational subtract(Rational other) {
+        BigInteger gcd_den = denominator.gcd(other.denominator);
+        return new Rational(
+            numerator.multiply(other.denominator).divide(gcd_den)
+            .subtract(other.numerator.multiply(denominator).divide(gcd_den)),
+            denominator.multiply(other.denominator).divide(gcd_den)
+            );
+    }
+
     public Rational multiply(Rational other) {
         BigInteger gcd_num_oden = numerator.gcd(other.denominator);
         boolean isZero = gcd_num_oden.equals(BigInteger.ZERO);

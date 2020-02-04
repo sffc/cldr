@@ -910,7 +910,6 @@ public class SupplementalDataInfo {
     public Multimap<String, String> languageGroups = TreeMultimap.create();
     
     public RationalParser rationalParser = new RationalParser();
-    public Map<String,String> baseUnitToQuantity = new LinkedHashMap<>();
     public UnitConverter unitConverter = new UnitConverter(rationalParser);
 
     public enum MeasurementType {
@@ -1150,9 +1149,11 @@ public class SupplementalDataInfo {
         coverageLevels = Collections.unmodifiableSortedSet(coverageLevels);
 
         measurementData = CldrUtility.protectCollection(measurementData);
-        baseUnitToQuantity = CldrUtility.protectCollection(baseUnitToQuantity);
+        
+        unitConverter.addAliases(typeToTagToReplacement.get("unit"));
         unitConverter.freeze();
         rationalParser.freeze();
+        
         timeData = CldrUtility.protectCollection(timeData);
 
         validityInfo = CldrUtility.protectCollection(validityInfo);
@@ -1369,7 +1370,7 @@ public class SupplementalDataInfo {
 
             final String quantity = parts.getAttributeValue(-1, "quantity");
             final String baseUnit = parts.getAttributeValue(-1, "baseUnit");
-            baseUnitToQuantity.put(baseUnit, quantity);
+            unitConverter.addQuantityInfo(baseUnit, quantity);
             return true;
         }
 
@@ -1378,9 +1379,9 @@ public class SupplementalDataInfo {
             
             final String source = parts.getAttributeValue(-1, "source");
             final String target = parts.getAttributeValue(-1, "target");
-            if (source.contentEquals(target)) {
-                throw new IllegalArgumentException("Cannot convert from something to itself " + parts);
-            }
+//            if (source.contentEquals(target)) {
+//                throw new IllegalArgumentException("Cannot convert from something to itself " + parts);
+//            }
             String factor = parts.getAttributeValue(-1, "factor");
             String offset = parts.getAttributeValue(-1, "offset");
             String reciprocal = parts.getAttributeValue(-1, "reciprocal");
@@ -1389,7 +1390,6 @@ public class SupplementalDataInfo {
                 factor, offset, reciprocal);
             return true;
         }
-
 
 
         private boolean handleTimeData(XPathParts parts) {
@@ -4375,10 +4375,6 @@ public class SupplementalDataInfo {
         return unitConverter;
     }
     
-    public Map<String, String> getBaseUnitToQuantity() {
-        return baseUnitToQuantity;
-    }
-
     public RationalParser getRationalParser() {
         return rationalParser;
     }
