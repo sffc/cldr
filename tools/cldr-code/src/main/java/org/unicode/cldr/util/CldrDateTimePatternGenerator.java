@@ -33,30 +33,28 @@ public class CldrDateTimePatternGenerator {
     private String dateTimeFormatMedium = "{1} {0}";
     private String dateTimeFormatShort = "{1} {0}";
 
-    private static final String[] STOCK = {"short", "medium", "long", "full"};
+    private static final String[] STOCK = DateTimeFormats.STOCK;
     
     /**
      * The canonical order of date/time fields as defined by the LDML specification (TR35).
      * Skeletons are normalized to this order to ensure consistent matching.
      */
-    private static final String CANONICAL_ORDER = "GyYuUrQqMLwWEecdDFgabBhHKkmsSAzZOvVXx";
+    private static final String CANONICAL_ORDER = DateTimeFormats.CANONICAL_ORDER;
 
     /** Characters representing date fields. */
-    private static final String DATE_FIELDS = "GyYruUQqMLwWEdDFg";
+    private static final String DATE_FIELDS = DateTimeFormats.DATE_FIELDS;
 
     /** Characters representing time fields. */
-    private static final String TIME_FIELDS = "aBhHkKmmsSAzZOvVXx";
+    private static final String TIME_FIELDS = DateTimeFormats.TIME_FIELDS;
 
     /** Characters that are always numeric. */
-    private static final String ALWAYS_NUMERIC_FIELDS = "yYruUwWdDFghHKkmsSA";
+    private static final String ALWAYS_NUMERIC_FIELDS = DateTimeFormats.ALWAYS_NUMERIC_FIELDS;
 
     /** Characters that are numeric if length is 1 or 2, and text otherwise. */
-    private static final String NUMERIC_OR_TEXT_FIELDS = "MLQqec";
+    private static final String NUMERIC_OR_TEXT_FIELDS = DateTimeFormats.NUMERIC_OR_TEXT_FIELDS;
 
     /** Sets of related field characters that represent the same semantic field (e.g., M and L for Month). */
-    private static final String[] RELATED_FIELD_SETS = {
-        "yYruU", "ML", "wW", "dDFg", "Eec", "abB", "hHKk", "sSA", "zZOvVXx"
-    };
+    private static final String[] RELATED_FIELD_SETS = DateTimeFormats.RELATED_FIELD_SETS;
 
     /**
      * Constructs a new generator for the given CLDRFile and calendar.
@@ -390,21 +388,8 @@ public class CldrDateTimePatternGenerator {
      * @return the request name (e.g., "Year", "Month")
      */
     private String getAppendRequestName(char fieldChar) {
-        switch(fieldChar) {
-            case 'G': return "Era";
-            case 'y': case 'Y': case 'u': case 'U': return "Year";
-            case 'Q': case 'q': return "Quarter";
-            case 'M': case 'L': return "Month";
-            case 'w': return "Week";
-            case 'W': return "Week";
-            case 'd': case 'D': case 'F': case 'g': return "Day";
-            case 'E': case 'e': case 'c': return "Day-Of-Week";
-            case 'h': case 'H': case 'K': case 'k': return "Hour";
-            case 'm': return "Minute";
-            case 's': case 'S': case 'A': return "Second";
-            case 'z': case 'Z': case 'O': case 'v': case 'V': case 'X': case 'x': return "Timezone";
-            default: return String.valueOf(fieldChar);
-        }
+        String result = DateTimeFormats.getAppendRequestName(fieldChar);
+        return result != null ? result : String.valueOf(fieldChar);
     }
 
     /**
@@ -414,25 +399,8 @@ public class CldrDateTimePatternGenerator {
      * @return the field name key (e.g., "year", "month")
      */
     private String getFieldDisplayNameKey(char fieldChar) {
-        switch(fieldChar) {
-            case 'G': return "era";
-            case 'y': case 'Y': case 'u': case 'U': return "year";
-            case 'Q': case 'q': return "quarter";
-            case 'M': case 'L': return "month";
-            case 'w': return "week";
-            case 'W': return "week_of_month";
-            case 'd': return "day";
-            case 'D': return "day_of_year";
-            case 'F': return "day_of_week_in_month";
-            case 'g': return "day";
-            case 'E': case 'e': case 'c': return "weekday";
-            case 'a': case 'b': case 'B': return "dayperiod";
-            case 'h': case 'H': case 'K': case 'k': return "hour";
-            case 'm': return "minute";
-            case 's': case 'S': case 'A': return "second";
-            case 'z': case 'Z': case 'O': case 'v': case 'V': case 'X': case 'x': return "zone";
-            default: return String.valueOf(fieldChar);
-        }
+        String result = DateTimeFormats.getFieldDisplayNameKey(fieldChar);
+        return result != null ? result : String.valueOf(fieldChar);
     }
 
     /**
@@ -768,40 +736,10 @@ public class CldrDateTimePatternGenerator {
     }
 
     private static int mapAppendItem(String request) {
-        switch (request) {
-            case "Era": return DateTimePatternGenerator.ERA;
-            case "Year": return DateTimePatternGenerator.YEAR;
-            case "Quarter": return DateTimePatternGenerator.QUARTER;
-            case "Month": return DateTimePatternGenerator.MONTH;
-            case "Week": return DateTimePatternGenerator.WEEK_OF_YEAR;
-            case "Day": return DateTimePatternGenerator.DAY;
-            case "Day-Of-Week": return DateTimePatternGenerator.WEEKDAY;
-            case "Hour": return DateTimePatternGenerator.HOUR;
-            case "Minute": return DateTimePatternGenerator.MINUTE;
-            case "Second": return DateTimePatternGenerator.SECOND;
-            case "Timezone": return DateTimePatternGenerator.ZONE;
-            default: return -1;
-        }
+        return DateTimeFormats.mapAppendItem(request);
     }
 
     private static int mapFieldName(String key) {
-        switch (key) {
-            case "era": return DateTimePatternGenerator.ERA;
-            case "year": return DateTimePatternGenerator.YEAR;
-            case "quarter": return DateTimePatternGenerator.QUARTER;
-            case "month": return DateTimePatternGenerator.MONTH;
-            case "week": return DateTimePatternGenerator.WEEK_OF_YEAR;
-            case "week_of_month": return DateTimePatternGenerator.WEEK_OF_MONTH;
-            case "day": return DateTimePatternGenerator.DAY;
-            case "day_of_year": return DateTimePatternGenerator.DAY_OF_YEAR;
-            case "day_of_week_in_month": return DateTimePatternGenerator.DAY_OF_WEEK_IN_MONTH;
-            case "weekday": return DateTimePatternGenerator.WEEKDAY;
-            case "dayperiod": return DateTimePatternGenerator.DAYPERIOD;
-            case "hour": return DateTimePatternGenerator.HOUR;
-            case "minute": return DateTimePatternGenerator.MINUTE;
-            case "second": return DateTimePatternGenerator.SECOND;
-            case "zone": return DateTimePatternGenerator.ZONE;
-            default: return -1;
-        }
+        return DateTimeFormats.mapFieldName(key);
     }
 }

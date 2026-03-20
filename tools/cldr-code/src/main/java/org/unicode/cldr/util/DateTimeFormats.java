@@ -6,6 +6,7 @@ import com.ibm.icu.text.Bidi;
 import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.DateIntervalFormat;
 import com.ibm.icu.text.DateIntervalInfo;
+import com.ibm.icu.text.DateTimePatternGenerator;
 import org.unicode.cldr.util.CldrDateTimePatternGenerator;
 import com.ibm.icu.text.DecimalFormat;
 import com.ibm.icu.text.MessageFormat;
@@ -95,7 +96,138 @@ public class DateTimeFormats {
     private static final String tableSpan = "<span style='" + tableBackground + "'>";
     private static final String spanEnd = "</span>";
 
-    private static final String[] STOCK = {"short", "medium", "long", "full"};
+    public static final String[] STOCK = {"short", "medium", "long", "full"};
+    public static final String[] FIELD_NAMES = {
+        "era",
+        "year",
+        "quarter",
+        "month",
+        "week",
+        "week_of_month",
+        "weekday",
+        "day",
+        "day_of_year",
+        "day_of_week_in_month",
+        "dayperiod",
+        "hour",
+        "minute",
+        "second",
+        "fractional_second",
+        "zone"
+    };
+
+    /**
+     * The names used in appendItems in CLDR.
+     * These match the ICU field indices.
+     */
+    public static final String[] APPEND_ITEM_NAMES = {
+        "Era",
+        "Year",
+        "Quarter",
+        "Month",
+        "Week",
+        "Week",
+        "Day-Of-Week",
+        "Day",
+        "Day",
+        "Day-Of-Week",
+        "-",
+        "Hour",
+        "Minute",
+        "Second",
+        "-",
+        "Timezone"
+    };
+
+    /**
+     * The canonical order of date/time fields as defined by the LDML specification (TR35).
+     * Skeletons are normalized to this order to ensure consistent matching.
+     */
+    public static final String CANONICAL_ORDER = "GyYuUrQqMLwWEecdDFgabBhHKkmsSAzZOvVXx";
+
+    /** Characters representing date fields. */
+    public static final String DATE_FIELDS = "GyYruUQqMLwWEdDFg";
+
+    /** Characters representing time fields. */
+    public static final String TIME_FIELDS = "aBhHkKmmsSAzZOvVXx";
+
+    /** Characters that are always numeric. */
+    public static final String ALWAYS_NUMERIC_FIELDS = "yYruUwWdDFghHKkmsSA";
+
+    /** Characters that are numeric if length is 1 or 2, and text otherwise. */
+    public static final String NUMERIC_OR_TEXT_FIELDS = "MLQqec";
+
+    /** Sets of related field characters that represent the same semantic field (e.g., M and L for Month). */
+    public static final String[] RELATED_FIELD_SETS = {
+        "yYruU", "ML", "wW", "dDFg", "Eec", "abB", "hHKk", "sSA", "zZOvVXx"
+    };
+
+    /**
+     * Maps a CLDR appendItem request name to an ICU field index.
+     * @param request the request name, e.g., "Era"
+     * @return the ICU field index, or -1 if not found
+     */
+    public static int mapAppendItem(String request) {
+        for (int i = 0; i < APPEND_ITEM_NAMES.length; i++) {
+            if (APPEND_ITEM_NAMES[i].equals(request)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Maps a CLDR field type to an ICU field index.
+     * @param key the field type, e.g., "era"
+     * @return the ICU field index, or -1 if not found
+     */
+    public static int mapFieldName(String key) {
+        for (int i = 0; i < FIELD_NAMES.length; i++) {
+            if (FIELD_NAMES[i].equals(key)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Gets the CLDR appendItem request name for a field character.
+     * @param fieldChar the pattern character, e.g., 'G'
+     * @return the request name, e.g., "Era", or null if not found
+     */
+    public static String getAppendRequestName(char fieldChar) {
+        int field = -1;
+        try {
+            field = new com.ibm.icu.text.DateTimePatternGenerator.VariableField(String.valueOf(fieldChar)).getType();
+        } catch (Exception e) {
+            return null;
+        }
+        if (field >= 0 && field < APPEND_ITEM_NAMES.length) {
+            String name = APPEND_ITEM_NAMES[field];
+            return name.equals("-") ? null : name;
+        }
+        return null;
+    }
+
+    /**
+     * Gets the CLDR field display name key for a field character.
+     * @param fieldChar the pattern character, e.g., 'G'
+     * @return the field name key, e.g., "era", or null if not found
+     */
+    public static String getFieldDisplayNameKey(char fieldChar) {
+        int field = -1;
+        try {
+            field = new com.ibm.icu.text.DateTimePatternGenerator.VariableField(String.valueOf(fieldChar)).getType();
+        } catch (Exception e) {
+            return null;
+        }
+        if (field >= 0 && field < FIELD_NAMES.length) {
+            String name = FIELD_NAMES[field];
+            return name.equals("-") ? null : name;
+        }
+        return null;
+    }
+
     private static final String[] CALENDAR_FIELD_TO_PATTERN_LETTER = {
         "G", "y", "M",
         "w", "W", "d",
@@ -197,25 +329,6 @@ public class DateTimeFormats {
                                     + "\"]/dateTimeFormats/intervalFormats/intervalFormatFallback"));
         }
     }
-
-    private static final String[] FIELD_NAMES = {
-        "era",
-        "year",
-        "quarter",
-        "month",
-        "week",
-        "week_of_month",
-        "weekday",
-        "day",
-        "day_of_year",
-        "day_of_week_in_month",
-        "dayperiod",
-        "hour",
-        "minute",
-        "second",
-        "fractional_second",
-        "zone"
-    };
 
     static {
         if (FIELD_NAMES.length != 16) {

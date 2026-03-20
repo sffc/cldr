@@ -34,7 +34,7 @@ public class CheckYear {
     static CLDRConfig testInfo = CLDRConfig.getInstance();
     private static final StandardCodes STANDARD_CODES = StandardCodes.make();
     private static final String LOCALES = ".*";
-    private static final String[] STOCK = {"short", "medium", "long", "full"};
+    private static final String[] STOCK = DateTimeFormats.STOCK;
 
     enum Category {
         Year2_MonthNumeric,
