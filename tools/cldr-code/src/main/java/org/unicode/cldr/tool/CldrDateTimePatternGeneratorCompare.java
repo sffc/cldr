@@ -60,7 +60,7 @@ public class CldrDateTimePatternGeneratorCompare {
         
         try (PrintWriter out = FileUtilities.openUTF8Writer(outputDir, filename)) {
             // Header
-            out.println("Locale,Calendar,Skeleton,CldrDTPG Pattern,ICU4J DTPG Pattern,Match?");
+            out.println("Locale,Calendar,Skeleton,CldrDTPG Pattern,ICU4J DTPG Pattern,Match?,Trace");
 
             int count = 0;
             List<String> sortedLocales = new ArrayList<>(locales);
@@ -79,10 +79,12 @@ public class CldrDateTimePatternGeneratorCompare {
                     DateTimePatternGenerator icuGen = cldrGen.getIcu4jGenerator();
 
                     for (String skeleton : SKELETONS) {
-                        String cldrPattern = cldrGen.getBestPattern(skeleton);
+                        List<String> trace = new ArrayList<>();
+                        String cldrPattern = cldrGen.getBestPattern(skeleton, trace);
                         String icuPattern = icuGen.getBestPattern(skeleton);
                         
                         boolean match = cldrPattern.equals(icuPattern);
+                        String traceStr = String.join(" | ", trace);
                         
                         out.print(escapeCsv(localeID));
                         out.print(",");
@@ -95,6 +97,8 @@ public class CldrDateTimePatternGeneratorCompare {
                         out.print(escapeCsv(icuPattern));
                         out.print(",");
                         out.print(match ? "YES" : "NO");
+                        out.print(",");
+                        out.print(escapeCsv(traceStr));
                         out.println();
                         
                         count++;

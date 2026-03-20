@@ -254,19 +254,44 @@ public class CldrDateTimePatternGenerator {
      * 4. Search for the closest available skeleton using the TR35 distance metric.
      * 5. Expand the matched pattern to match requested field lengths.
      * 6. Use appendItems to add any requested fields missing from the best match.
-     * 
+     *
+     * For details of how the DTPG arrived at the pattern, pass a List as the second argument.
+     *
      * @param skeleton the requested skeleton
      * @return the best localized pattern
      */
     public String getBestPattern(String skeleton) {
+        return getBestPattern(skeleton, null);
+    }
+
+    /**
+     * Returns the best matching localized pattern for the requested skeleton, 
+     * and records the steps taken in the provided log list.
+     * 
+     * @param skeleton the requested skeleton
+     * @param log a list to collect the trace messages, or null
+     * @return the best localized pattern
+     */
+    public String getBestPattern(String skeleton, List<String> log) {
         if (skeleton == null || skeleton.isEmpty()) return "";
         
+        if (log != null) log.add("Requested skeleton: " + skeleton);
+        
+        String origSkeleton = skeleton;
         skeleton = skeleton.replace('j', defaultHourFormatChar);
         skeleton = skeleton.replace('C', 'a');
         
+        if (log != null && !origSkeleton.equals(skeleton)) {
+            log.add("Replaced 'j/C' -> '" + defaultHourFormatChar + "/a': " + skeleton);
+        }
+        
         String canonicalSkeleton = canonicalizeSkeleton(skeleton);
+        if (log != null && !skeleton.equals(canonicalSkeleton)) {
+            log.add("Canonicalized skeleton: " + canonicalSkeleton);
+        }
         
         if (availableFormats.containsKey(canonicalSkeleton)) {
+            if (log != null) log.add("Found exact match in availableFormats: " + availableFormats.get(canonicalSkeleton));
             return availableFormats.get(canonicalSkeleton);
         }
 
@@ -274,10 +299,13 @@ public class CldrDateTimePatternGenerator {
         String timeSkeleton = getTimeSkeleton(canonicalSkeleton);
         
         if (dateSkeleton.length() > 0 && timeSkeleton.length() > 0) {
-            String datePattern = getBestPattern(dateSkeleton);
-            String timePattern = getBestPattern(timeSkeleton);
+            if (log != null) log.add("Splitting skeleton into date='" + dateSkeleton + "' and time='" + timeSkeleton + "'");
+            String datePattern = getBestPattern(dateSkeleton, log);
+            String timePattern = getBestPattern(timeSkeleton, log);
             String dateTimePattern = getDateTimePattern(dateSkeleton);
-            return dateTimePattern.replace("{1}", datePattern).replace("{0}", timePattern);
+            String combined = dateTimePattern.replace("{1}", datePattern).replace("{0}", timePattern);
+            if (log != null) log.add("Combined components using '" + dateTimePattern + "' -> " + combined);
+            return combined;
         }
 
         int bestDistance = Integer.MAX_VALUE;
@@ -292,7 +320,9 @@ public class CldrDateTimePatternGenerator {
         }
 
         if (bestMatchSkeleton != null && bestDistance < 1000) {
+            if (log != null) log.add("Closest skeleton match: " + bestMatchSkeleton + " (distance: " + bestDistance + ")");
             String pattern = expandPattern(canonicalSkeleton, bestMatchSkeleton, availableFormats.get(bestMatchSkeleton));
+            if (log != null) log.add("Expanded pattern to requested lengths: " + pattern);
             
             // Handle missing fields
             List<String> reqFields = splitSkeleton(canonicalSkeleton);
@@ -308,18 +338,25 @@ public class CldrDateTimePatternGenerator {
             for (String rf : reqFields) {
                 if (!availChars.contains(rf.charAt(0))) {
                     pattern = appendField(pattern, rf);
+                    if (log != null) log.add("Appended missing field '" + rf + "' -> " + pattern);
                 }
             }
             return pattern;
         }
         
         // Final fallback
+        if (log != null) log.add("No close match found, falling back to basic patterns");
         List<String> fields = splitSkeleton(canonicalSkeleton);
         if (fields.isEmpty()) return "";
         String res = "";
         for (String f : fields) {
-            if (res.isEmpty()) res = getBasicPattern(f);
-            else res = appendField(res, f);
+            if (res.isEmpty()) {
+                res = getBasicPattern(f);
+                if (log != null) log.add("Started fallback with '" + f + "' -> " + res);
+            } else {
+                res = appendField(res, f);
+                if (log != null) log.add("Appended fallback field '" + f + "' -> " + res);
+            }
         }
         return res;
     }
