@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.ibm.icu.text.DateFormat;
+import com.ibm.icu.text.DateTimePatternGenerator;
 import com.ibm.icu.util.Output;
 import org.unicode.cldr.util.XMLSource;
 
@@ -693,5 +695,76 @@ public class CldrDateTimePatternGenerator {
             for (int j = 0; j < counts[c]; j++) res.append(c);
         }
         return res.toString();
+    }
+
+    /**
+     * Creates an ICU4J DateTimePatternGenerator populated with the exact same data 
+     * loaded by this CldrDateTimePatternGenerator. This is useful for algorithmic comparisons.
+     */
+    public DateTimePatternGenerator getIcu4jGenerator() {
+        DateTimePatternGenerator icuGen = DateTimePatternGenerator.getEmptyInstance();
+        icuGen.setDefaultHourFormatChar(defaultHourFormatChar);
+        icuGen.setDateTimeFormat(DateFormat.FULL, dateTimeFormatFull);
+        icuGen.setDateTimeFormat(DateFormat.LONG, dateTimeFormatLong);
+        icuGen.setDateTimeFormat(DateFormat.MEDIUM, dateTimeFormatMedium);
+        icuGen.setDateTimeFormat(DateFormat.SHORT, dateTimeFormatShort);
+
+        for (String pattern : availableFormats.values()) {
+            icuGen.addPattern(pattern, false, new DateTimePatternGenerator.PatternInfo());
+        }
+
+        for (Map.Entry<String, String> entry : appendItems.entrySet()) {
+            int field = mapAppendItem(entry.getKey());
+            if (field != -1) {
+                icuGen.setAppendItemFormat(field, entry.getValue());
+            }
+        }
+
+        for (Map.Entry<String, String> entry : fieldNames.entrySet()) {
+            int field = mapFieldName(entry.getKey());
+            if (field != -1) {
+                icuGen.setAppendItemName(field, entry.getValue());
+            }
+        }
+
+        return icuGen;
+    }
+
+    private static int mapAppendItem(String request) {
+        switch (request) {
+            case "Era": return DateTimePatternGenerator.ERA;
+            case "Year": return DateTimePatternGenerator.YEAR;
+            case "Quarter": return DateTimePatternGenerator.QUARTER;
+            case "Month": return DateTimePatternGenerator.MONTH;
+            case "Week": return DateTimePatternGenerator.WEEK_OF_YEAR;
+            case "Day": return DateTimePatternGenerator.DAY;
+            case "Day-Of-Week": return DateTimePatternGenerator.WEEKDAY;
+            case "Hour": return DateTimePatternGenerator.HOUR;
+            case "Minute": return DateTimePatternGenerator.MINUTE;
+            case "Second": return DateTimePatternGenerator.SECOND;
+            case "Timezone": return DateTimePatternGenerator.ZONE;
+            default: return -1;
+        }
+    }
+
+    private static int mapFieldName(String key) {
+        switch (key) {
+            case "era": return DateTimePatternGenerator.ERA;
+            case "year": return DateTimePatternGenerator.YEAR;
+            case "quarter": return DateTimePatternGenerator.QUARTER;
+            case "month": return DateTimePatternGenerator.MONTH;
+            case "week": return DateTimePatternGenerator.WEEK_OF_YEAR;
+            case "week_of_month": return DateTimePatternGenerator.WEEK_OF_MONTH;
+            case "day": return DateTimePatternGenerator.DAY;
+            case "day_of_year": return DateTimePatternGenerator.DAY_OF_YEAR;
+            case "day_of_week_in_month": return DateTimePatternGenerator.DAY_OF_WEEK_IN_MONTH;
+            case "weekday": return DateTimePatternGenerator.WEEKDAY;
+            case "dayperiod": return DateTimePatternGenerator.DAYPERIOD;
+            case "hour": return DateTimePatternGenerator.HOUR;
+            case "minute": return DateTimePatternGenerator.MINUTE;
+            case "second": return DateTimePatternGenerator.SECOND;
+            case "zone": return DateTimePatternGenerator.ZONE;
+            default: return -1;
+        }
     }
 }
