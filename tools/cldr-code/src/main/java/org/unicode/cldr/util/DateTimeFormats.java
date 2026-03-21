@@ -331,12 +331,21 @@ public class DateTimeFormats {
     }
 
     static {
-        if (FIELD_NAMES.length != 16) {
+        if (FIELD_NAMES.length != DateTimePatternGenerator.TYPE_LIMIT) {
             throw new IllegalArgumentException(
-                    "Internal error "
+                    "Internal error: FIELD_NAMES.length != "
+                            + DateTimePatternGenerator.TYPE_LIMIT
+                            + " ("
                             + FIELD_NAMES.length
-                            + "\t"
-                            + 16);
+                            + ")");
+        }
+        if (APPEND_ITEM_NAMES.length != DateTimePatternGenerator.TYPE_LIMIT) {
+            throw new IllegalArgumentException(
+                    "Internal error: APPEND_ITEM_NAMES.length != "
+                            + DateTimePatternGenerator.TYPE_LIMIT
+                            + " ("
+                            + APPEND_ITEM_NAMES.length
+                            + ")");
         }
     }
 
