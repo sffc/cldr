@@ -104,14 +104,14 @@ public class CldrDateTimePatternGenerator {
                 String tPath = "//ldml/dates/calendars/calendar[@type=\"" + calendarID + "\"]/timeFormats/timeFormatLength[@type=\"" + stock + "\"]/timeFormat[@type=\"standard\"]/pattern[@type=\"standard\"]";
                 String tsPath = "//ldml/dates/calendars/calendar[@type=\"" + calendarID + "\"]/timeFormats/timeFormatLength[@type=\"" + stock + "\"]/timeFormat[@type=\"standard\"]/datetimeSkeleton";
                 
-                String dp = getStringValueWithFallback(dPath);
-                String ds = getStringValueWithFallback(dsPath);
+                String dp = file.getStringValueWithBailey(dPath);
+                String ds = file.getStringValueWithBailey(dsPath);
                 if (dp != null && ds != null) {
                     availableFormats.put(canonicalizeSkeleton(ds), dp);
                 }
                 
-                String tp = getStringValueWithFallback(tPath);
-                String ts = getStringValueWithFallback(tsPath);
+                String tp = file.getStringValueWithBailey(tPath);
+                String ts = file.getStringValueWithBailey(tsPath);
                 if (tp != null && ts != null) {
                     availableFormats.put(canonicalizeSkeleton(ts), tp);
                 }
@@ -149,7 +149,7 @@ public class CldrDateTimePatternGenerator {
         // Resolve the actual patterns for OUR specific calendar (handling TR35 cross-calendar fallback).
         for (String id : allIds) {
             String path = "//ldml/dates/calendars/calendar[@type=\"" + calendarID + "\"]/dateTimeFormats/availableFormats/dateFormatItem[@id=\"" + id + "\"]";
-            String value = getStringValueWithFallback(path);
+            String value = file.getStringValueWithBailey(path);
             if (value != null) {
                 availableFormats.put(canonicalizeSkeleton(id), value);
             }
@@ -157,7 +157,7 @@ public class CldrDateTimePatternGenerator {
 
         for (String request : allAppendRequests) {
             String path = "//ldml/dates/calendars/calendar[@type=\"" + calendarID + "\"]/dateTimeFormats/appendItems/appendItem[@request=\"" + request + "\"]";
-            String value = getStringValueWithFallback(path);
+            String value = file.getStringValueWithBailey(path);
             if (value != null) {
                 appendItems.put(request, value);
             }
@@ -165,60 +165,22 @@ public class CldrDateTimePatternGenerator {
 
         // TODO: Consider using atTime pattern
         String dateTimeFormatLengthPattern = "//ldml/dates/calendars/calendar[@type=\"%s\"]/dateTimeFormats/dateTimeFormatLength[@type=\"%s\"]/dateTimeFormat[@type=\"standard\"]/pattern[@type=\"standard\"]";
-        dateTimeFormatFull = getStringValueWithFallbackOrDefault(
+        dateTimeFormatFull = file.getStringValueWithBailey(
             String.format(dateTimeFormatLengthPattern, calendarID, "full"),
             dateTimeFormatFull
         );
-        dateTimeFormatLong = getStringValueWithFallbackOrDefault(
+        dateTimeFormatLong = file.getStringValueWithBailey(
             String.format(dateTimeFormatLengthPattern, calendarID, "long"),
             dateTimeFormatLong
         );
-        dateTimeFormatMedium = getStringValueWithFallbackOrDefault(
+        dateTimeFormatMedium = file.getStringValueWithBailey(
             String.format(dateTimeFormatLengthPattern, calendarID, "medium"),
             dateTimeFormatMedium
         );
-        dateTimeFormatShort = getStringValueWithFallbackOrDefault(
+        dateTimeFormatShort = file.getStringValueWithBailey(
             String.format(dateTimeFormatLengthPattern, calendarID, "short"),
             dateTimeFormatShort
         );
-    }
-
-    /**
-     * Resolves values from the CLDRFile, strictly handling the TR35 rule that 
-     * non-Gregorian calendars fallback to Gregorian values if missing locally 
-     * or at the root aliasing levels.
-     * 
-     * @param path the XPath to resolve
-     * @return the resolved string value, or null if not found
-     */
-    private String getStringValueWithFallback(String path) {
-        Output<String> localeWhereFound = new Output<>();
-        String val = file.getStringValueWithBailey(path, null, localeWhereFound);
-
-        if (!calendarID.equals("gregorian")) {
-            // If value is null, or it was only found at root/code-fallback, we must 
-            // attempt to inherit from the specific locale's Gregorian calendar first.
-            if (val == null || (localeWhereFound.value != null && (localeWhereFound.value.equals("root") || localeWhereFound.value.equals(XMLSource.CODE_FALLBACK_ID)))) {
-                String gregPath = path.replaceFirst("\\[@type=\"[^\"]+\"\\]", "[@type=\"gregorian\"]");
-                String gregVal = file.getStringValueWithBailey(gregPath, null, localeWhereFound);
-                if (gregVal != null && localeWhereFound.value != null && !localeWhereFound.value.equals("root") && !localeWhereFound.value.equals(XMLSource.CODE_FALLBACK_ID)) {
-                    return gregVal;
-                }
-            }
-        }
-        return val;
-    }
-
-    /**
-     * Resolves a value from the CLDRFile with fallback, returning a default value if not found.
-     * 
-     * @param path the XPath to resolve
-     * @param defaultValue the value to return if resolution fails
-     * @return the resolved value or the default
-     */
-    private String getStringValueWithFallbackOrDefault(String path, String defaultValue) {
-        String val = getStringValueWithFallback(path);
-        return val != null ? val : defaultValue;
     }
 
     /**
