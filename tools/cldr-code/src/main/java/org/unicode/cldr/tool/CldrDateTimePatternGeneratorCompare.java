@@ -83,7 +83,7 @@ public class CldrDateTimePatternGeneratorCompare {
                         String cldrPattern = normalizePattern(cldrGen.getBestPattern(skeleton, trace));
                         String icuPattern = normalizePattern(icuGen.getBestPattern(skeleton));
                         
-                        boolean match = cldrPattern.equals(icuPattern);
+                        String matchResult = getDifferenceReason(cldrPattern, icuPattern);
                         String traceStr = String.join(" | ", trace);
                         
                         out.print(escapeCsv(localeID));
@@ -96,7 +96,7 @@ public class CldrDateTimePatternGeneratorCompare {
                         out.print(",");
                         out.print(escapeCsv(icuPattern));
                         out.print(",");
-                        out.print(match ? "YES" : "NO");
+                        out.print(escapeCsv(matchResult));
                         out.print(",");
                         out.print(escapeCsv(traceStr));
                         out.println();
@@ -108,6 +108,81 @@ public class CldrDateTimePatternGeneratorCompare {
             }
             System.out.println("Done! Generated " + count + " comparisons.");
         }
+    }
+
+    private static String getDifferenceReason(String cldr, String icu) {
+        if (cldr.equals(icu)) return "YES";
+
+        List<String> cldrFields = getFields(cldr);
+        List<String> icuFields = getFields(icu);
+
+        // 1. Check for Era mismatch
+        boolean cldrHasG = cldrFields.stream().anyMatch(f -> f.startsWith("G"));
+        boolean icuHasG = icuFields.stream().anyMatch(f -> f.startsWith("G"));
+        if (cldrHasG != icuHasG) {
+            return icuHasG ? "NO: Era added" : "NO: Era removed";
+        }
+
+        // 2. Check for Field Set mismatch (excluding Era)
+        Set<Character> cldrFieldSet = new TreeSet<>();
+        for (String f : cldrFields) if (!f.startsWith("G")) cldrFieldSet.add(f.charAt(0));
+        Set<Character> icuFieldSet = new TreeSet<>();
+        for (String f : icuFields) if (!f.startsWith("G")) icuFieldSet.add(f.charAt(0));
+
+        if (!cldrFieldSet.equals(icuFieldSet)) {
+            return "NO: Field set mismatch";
+        }
+
+        // 3. Check for Field Order mismatch
+        List<Character> cldrOrder = new ArrayList<>();
+        for (String f : cldrFields) cldrOrder.add(f.charAt(0));
+        List<Character> icuOrder = new ArrayList<>();
+        for (String f : icuFields) icuOrder.add(f.charAt(0));
+        
+        if (!cldrOrder.equals(icuOrder)) {
+            return "NO: Field order mismatch";
+        }
+
+        // 4. Check for Field Length mismatch
+        if (cldrFields.size() == icuFields.size()) {
+            for (int i = 0; i < cldrFields.size(); i++) {
+                String cF = cldrFields.get(i);
+                String iF = icuFields.get(i);
+                if (!cF.equals(iF)) {
+                    return "NO: Field length mismatch: " + cF + " -> " + iF;
+                }
+            }
+        }
+
+        // 5. If everything else is the same, it must be literals or separators
+        return "NO: Separator/Literal mismatch";
+    }
+
+    private static List<String> getFields(String pattern) {
+        List<String> fields = new ArrayList<>();
+        boolean inQuote = false;
+        for (int i = 0; i < pattern.length(); ) {
+            char ch = pattern.charAt(i);
+            if (ch == '\'') {
+                inQuote = !inQuote;
+                i++;
+                continue;
+            }
+            if (inQuote) {
+                i++;
+                continue;
+            }
+            if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+                int start = i;
+                while (i < pattern.length() && pattern.charAt(i) == ch) {
+                    i++;
+                }
+                fields.add(pattern.substring(start, i));
+            } else {
+                i++;
+            }
+        }
+        return fields;
     }
 
     private static String normalizePattern(String pattern) {
