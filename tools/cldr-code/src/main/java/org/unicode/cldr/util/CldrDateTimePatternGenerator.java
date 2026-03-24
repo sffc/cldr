@@ -668,15 +668,13 @@ public class CldrDateTimePatternGenerator {
      * Creates an ICU4J DateTimePatternGenerator populated with the exact same data 
      * loaded by this CldrDateTimePatternGenerator. This is useful for algorithmic comparisons.
      */
-    public DateTimePatternGenerator getIcu4jGenerator(boolean addStock) {
+    public DateTimePatternGenerator getIcu4jGenerator() {
         DateTimePatternGenerator icuGen = DateTimePatternGenerator.getEmptyInstance();
         icuGen.setDefaultHourFormatChar(defaultHourFormatChar);
-        if (addStock) {
-          icuGen.setDateTimeFormat(DateFormat.FULL, dateTimeFormatFull);
-          icuGen.setDateTimeFormat(DateFormat.LONG, dateTimeFormatLong);
-          icuGen.setDateTimeFormat(DateFormat.MEDIUM, dateTimeFormatMedium);
-          icuGen.setDateTimeFormat(DateFormat.SHORT, dateTimeFormatShort);
-        }
+        icuGen.setDateTimeFormat(DateFormat.FULL, dateTimeFormatFull);
+        icuGen.setDateTimeFormat(DateFormat.LONG, dateTimeFormatLong);
+        icuGen.setDateTimeFormat(DateFormat.MEDIUM, dateTimeFormatMedium);
+        icuGen.setDateTimeFormat(DateFormat.SHORT, dateTimeFormatShort);
 
         for (String pattern : availableFormats.values()) {
             icuGen.addPattern(pattern, false, new DateTimePatternGenerator.PatternInfo());
