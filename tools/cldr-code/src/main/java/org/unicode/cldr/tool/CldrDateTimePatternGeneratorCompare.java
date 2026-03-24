@@ -74,7 +74,7 @@ public class CldrDateTimePatternGeneratorCompare {
                 CLDRFile cldrFile = factory.make(localeID, true);
 
                 for (String calendar : CALENDARS) {
-                    CldrDateTimePatternGenerator cldrGen = new CldrDateTimePatternGenerator(cldrFile, calendar, true);
+                    CldrDateTimePatternGenerator cldrGen = new CldrDateTimePatternGenerator(cldrFile, calendar, false);
                     
                     DateTimePatternGenerator icuGen = cldrGen.getIcu4jGenerator();
 
