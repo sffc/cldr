@@ -163,6 +163,27 @@ public class DateTimeFormats {
     };
 
     /**
+     * Checks if a field character represents a Month field.
+     */
+    public static boolean isMonth(char c) {
+        return "ML".indexOf(c) >= 0;
+    }
+
+    /**
+     * Checks if a field character represents a Weekday field.
+     */
+    public static boolean isWeekday(char c) {
+        return "Eec".indexOf(c) >= 0;
+    }
+
+    /**
+     * Checks if a field character represents a Year field.
+     */
+    public static boolean isYear(char c) {
+        return "yYruU".indexOf(c) >= 0;
+    }
+
+    /**
      * Maps a CLDR appendItem request name to an ICU field index.
      * @param request the request name, e.g., "Era"
      * @return the ICU field index, or -1 if not found

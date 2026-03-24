@@ -626,10 +626,20 @@ public class CldrDateTimePatternGenerator {
                     }
                 }
                 
-                if (availF != null && patField.length() == availF.length()) {
+                if (availF != null) {
                     if (isNumeric(reqF) == isNumeric(availF)) {
-                        char newChar = reqF.charAt(0);
-                        for (int k = 0; k < reqF.length(); k++) res.append(newChar);
+                        boolean isMonth = DateTimeFormats.isMonth(c);
+                        boolean isWeekday = DateTimeFormats.isWeekday(c);
+                        boolean isYear = DateTimeFormats.isYear(c);
+                        
+                        if (patField.length() == availF.length() || isMonth || isWeekday || isYear) {
+                            char newChar = (isMonth || isWeekday || (isYear && reqF.charAt(0) != 'Y')) ? c : reqF.charAt(0);
+                            StringBuilder adjusted = new StringBuilder();
+                            for (int k = 0; k < reqF.length(); k++) adjusted.append(newChar);
+                            res.append(adjusted);
+                        } else {
+                            res.append(patField);
+                        }
                     } else {
                         // Prevent substitution between numeric and non-numeric fields
                         res.append(patField);
