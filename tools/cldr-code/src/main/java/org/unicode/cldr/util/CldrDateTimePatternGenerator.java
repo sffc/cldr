@@ -681,13 +681,13 @@ public class CldrDateTimePatternGenerator {
          * We MUST use override=true here to ensure that all patterns defined in CLDR's availableFormats 
          * are added to the ICU4J generator's internal skeleton2pattern map. 
          * 
-         * In ICU4J's addPattern implementation, patterns that share a base skeleton (like yM and yMM) 
-         * are rejected if override=false, even though they have different field lengths. This 
-         * prevents ICU4J's getBestPattern from finding exact matches for some skeletons, 
-         * leading to incorrect results during comparison.
+         * Furthermore, we MUST use addPatternWithSkeleton instead of addPattern because some CLDR patterns 
+         * map a specific skeleton to a pattern that doesn't have the exact same field widths (e.g., cs: yMMMd -> d. M. y).
+         * If we only pass the pattern, ICU4J derives the skeleton (yMd) and forgets the original intent (yMMMd), 
+         * leading to incorrect fallback adjustments during getBestPattern.
          */
-        for (String pattern : availableFormats.values()) {
-            icuGen.addPattern(pattern, true, new DateTimePatternGenerator.PatternInfo());
+        for (Map.Entry<String, String> entry : availableFormats.entrySet()) {
+            icuGen.addPatternWithSkeleton(entry.getValue(), entry.getKey(), true, new DateTimePatternGenerator.PatternInfo());
         }
 
         for (Map.Entry<String, String> entry : appendItems.entrySet()) {
