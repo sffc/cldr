@@ -2,6 +2,7 @@ package org.unicode.cldr.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +25,9 @@ public class CldrDateTimePatternGenerator {
     private final boolean useStock;
 
     private char defaultHourFormatChar = 'H';
-    private Map<String, String> availableFormats = new HashMap<>();
-    private Map<String, String> appendItems = new HashMap<>();
-    private Map<String, String> fieldNames = new HashMap<>();
+    private Map<String, String> availableFormats = new LinkedHashMap<>();
+    private Map<String, String> appendItems = new LinkedHashMap<>();
+    private Map<String, String> fieldNames = new LinkedHashMap<>();
 
     private String dateTimeFormatFull = "{1} {0}";
     private String dateTimeFormatLong = "{1} {0}";
@@ -676,8 +677,17 @@ public class CldrDateTimePatternGenerator {
         icuGen.setDateTimeFormat(DateFormat.MEDIUM, dateTimeFormatMedium);
         icuGen.setDateTimeFormat(DateFormat.SHORT, dateTimeFormatShort);
 
+        /**
+         * We MUST use override=true here to ensure that all patterns defined in CLDR's availableFormats 
+         * are added to the ICU4J generator's internal skeleton2pattern map. 
+         * 
+         * In ICU4J's addPattern implementation, patterns that share a base skeleton (like yM and yMM) 
+         * are rejected if override=false, even though they have different field lengths. This 
+         * prevents ICU4J's getBestPattern from finding exact matches for some skeletons, 
+         * leading to incorrect results during comparison.
+         */
         for (String pattern : availableFormats.values()) {
-            icuGen.addPattern(pattern, false, new DateTimePatternGenerator.PatternInfo());
+            icuGen.addPattern(pattern, true, new DateTimePatternGenerator.PatternInfo());
         }
 
         for (Map.Entry<String, String> entry : appendItems.entrySet()) {
