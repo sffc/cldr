@@ -251,75 +251,74 @@ public class CldrDateTimePatternGenerator {
             log.add("Canonicalized skeleton: " + canonicalSkeleton);
         }
         
+        String res;
         if (availableFormats.containsKey(canonicalSkeleton)) {
             if (log != null) log.add("Found exact match in availableFormats: " + availableFormats.get(canonicalSkeleton));
-            return availableFormats.get(canonicalSkeleton);
-        }
-
-        String dateSkeleton = getDateSkeleton(canonicalSkeleton);
-        String timeSkeleton = getTimeSkeleton(canonicalSkeleton);
-        
-        if (dateSkeleton.length() > 0 && timeSkeleton.length() > 0) {
-            if (log != null) log.add("Splitting skeleton into date='" + dateSkeleton + "' and time='" + timeSkeleton + "'");
-            String datePattern = getBestPattern(dateSkeleton, log);
-            String timePattern = getBestPattern(timeSkeleton, log);
-            String dateTimePattern = getDateTimePattern(dateSkeleton);
-            String combined = dateTimePattern.replace("{1}", datePattern).replace("{0}", timePattern);
-            if (log != null) log.add("Combined components using '" + dateTimePattern + "' -> " + combined);
-            return combined;
-        }
-
-        int bestDistance = Integer.MAX_VALUE;
-        String bestMatchSkeleton = null;
-        
-        for (String availSkeleton : availableFormats.keySet()) {
-            int dist = getDistance(canonicalSkeleton, availSkeleton);
-            if (dist < bestDistance) {
-                bestDistance = dist;
-                bestMatchSkeleton = availSkeleton;
-            }
-        }
-
-        if (bestMatchSkeleton != null && bestDistance < 1000) {
-            if (log != null) log.add("Closest skeleton match: " + bestMatchSkeleton + " (distance: " + bestDistance + ")");
-            String pattern = expandPattern(canonicalSkeleton, bestMatchSkeleton, availableFormats.get(bestMatchSkeleton));
-            if (log != null) log.add("Expanded pattern to requested lengths: " + pattern);
+            res = availableFormats.get(canonicalSkeleton);
+        } else {
+            String dateSkeleton = getDateSkeleton(canonicalSkeleton);
+            String timeSkeleton = getTimeSkeleton(canonicalSkeleton);
             
-            // Handle missing fields
-            List<String> reqFields = splitSkeleton(canonicalSkeleton);
-            List<String> availFields = splitSkeleton(bestMatchSkeleton);
-            Set<Character> availChars = new LinkedHashSet<>();
-            for (String f : availFields) {
-                availChars.add(f.charAt(0));
-                for (char c : CANONICAL_ORDER.toCharArray()) {
-                    if (areFieldsRelated(f.charAt(0), c)) availChars.add(c);
-                }
-            }
-            
-            for (String rf : reqFields) {
-                if (!availChars.contains(rf.charAt(0))) {
-                    pattern = appendField(pattern, rf);
-                    if (log != null) log.add("Appended missing field '" + rf + "' -> " + pattern);
-                }
-            }
-            return pattern;
-        }
-        
-        // Final fallback
-        if (log != null) log.add("No close match found, falling back to basic patterns");
-        List<String> fields = splitSkeleton(canonicalSkeleton);
-        if (fields.isEmpty()) return "";
-        String res = "";
-        for (String f : fields) {
-            if (res.isEmpty()) {
-                res = getBasicPattern(f);
-                if (log != null) log.add("Started fallback with '" + f + "' -> " + res);
+            if (dateSkeleton.length() > 0 && timeSkeleton.length() > 0) {
+                if (log != null) log.add("Splitting skeleton into date='" + dateSkeleton + "' and time='" + timeSkeleton + "'");
+                String datePattern = getBestPattern(dateSkeleton, log);
+                String timePattern = getBestPattern(timeSkeleton, log);
+                String dateTimePattern = getDateTimePattern(dateSkeleton);
+                res = dateTimePattern.replace("{1}", datePattern).replace("{0}", timePattern);
+                if (log != null) log.add("Combined components using '" + dateTimePattern + "' -> " + res);
             } else {
-                res = appendField(res, f);
-                if (log != null) log.add("Appended fallback field '" + f + "' -> " + res);
+                int bestDistance = Integer.MAX_VALUE;
+                String bestMatchSkeleton = null;
+                
+                for (String availSkeleton : availableFormats.keySet()) {
+                    int dist = getDistance(canonicalSkeleton, availSkeleton);
+                    if (dist < bestDistance) {
+                        bestDistance = dist;
+                        bestMatchSkeleton = availSkeleton;
+                    }
+                }
+
+                if (bestMatchSkeleton != null && bestDistance < 1000) {
+                    if (log != null) log.add("Closest skeleton match: " + bestMatchSkeleton + " (distance: " + bestDistance + ")");
+                    res = expandPattern(canonicalSkeleton, bestMatchSkeleton, availableFormats.get(bestMatchSkeleton));
+                    if (log != null) log.add("Expanded pattern to requested lengths: " + res);
+                    
+                    // Handle missing fields
+                    List<String> reqFields = splitSkeleton(canonicalSkeleton);
+                    List<String> availFields = splitSkeleton(bestMatchSkeleton);
+                    Set<Character> availChars = new LinkedHashSet<>();
+                    for (String f : availFields) {
+                        availChars.add(f.charAt(0));
+                        for (char c : CANONICAL_ORDER.toCharArray()) {
+                            if (areFieldsRelated(f.charAt(0), c)) availChars.add(c);
+                        }
+                    }
+                    
+                    for (String rf : reqFields) {
+                        if (!availChars.contains(rf.charAt(0))) {
+                            res = appendField(res, rf);
+                            if (log != null) log.add("Appended missing field '" + rf + "' -> " + res);
+                        }
+                    }
+                } else {
+                    // Final fallback
+                    if (log != null) log.add("No close match found, falling back to basic patterns");
+                    List<String> fields = splitSkeleton(canonicalSkeleton);
+                    if (fields.isEmpty()) return "";
+                    res = "";
+                    for (String f : fields) {
+                        if (res.isEmpty()) {
+                            res = getBasicPattern(f);
+                            if (log != null) log.add("Started fallback with '" + f + "' -> " + res);
+                        } else {
+                            res = appendField(res, f);
+                            if (log != null) log.add("Appended fallback field '" + f + "' -> " + res);
+                        }
+                    }
+                }
             }
         }
-        return res;
+        return normalizePattern(res);
     }
     
     /**
@@ -643,6 +642,73 @@ public class CldrDateTimePatternGenerator {
             }
         }
         return res.toString();
+    }
+
+    /**
+     * Normalizes a date/time pattern by:
+     * 1. Rewriting abbreviated weekday fields (E, EE, EEE) to EEE.
+     * 2. Rewriting standalone month fields (M) to L if it's the only field in the pattern.
+     * 
+     * @param pattern the pattern to normalize
+     * @return the normalized pattern
+     */
+    public static String normalizePattern(String pattern) {
+        if (pattern == null) return null;
+
+        // 1. Check if it should be stand-alone Month (L instead of M)
+        // It's stand-alone if there are no other fields than M.
+        boolean hasOtherFields = false;
+        boolean hasM = false;
+        boolean inQuote = false;
+        for (int i = 0; i < pattern.length(); ++i) {
+            char ch = pattern.charAt(i);
+            if (ch == '\'') {
+                inQuote = !inQuote;
+            } else if (!inQuote) {
+                if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+                    if (ch == 'M') {
+                        hasM = true;
+                    } else {
+                        hasOtherFields = true;
+                    }
+                }
+            }
+        }
+        boolean useL = hasM && !hasOtherFields;
+
+        StringBuilder sb = new StringBuilder();
+        inQuote = false;
+        for (int i = 0; i < pattern.length(); ) {
+            char ch = pattern.charAt(i);
+            if (ch == '\'') {
+                sb.append(ch);
+                inQuote = !inQuote;
+                i++;
+            } else if (inQuote) {
+                sb.append(ch);
+                i++;
+            } else {
+                if (ch == 'E') {
+                    int count = 0;
+                    while (i < pattern.length() && pattern.charAt(i) == 'E') {
+                        count++;
+                        i++;
+                    }
+                    if (count <= 3) {
+                        sb.append("EEE");
+                    } else {
+                        for (int j = 0; j < count; j++) sb.append('E');
+                    }
+                } else if (ch == 'M' && useL) {
+                    sb.append('L');
+                    i++;
+                } else {
+                    sb.append(ch);
+                    i++;
+                }
+            }
+        }
+        return sb.toString();
     }
 
     /**
