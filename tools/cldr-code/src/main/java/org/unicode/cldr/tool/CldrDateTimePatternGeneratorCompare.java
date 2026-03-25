@@ -80,10 +80,11 @@ public class CldrDateTimePatternGeneratorCompare {
 
                     for (String skeleton : SKELETONS) {
                         List<String> trace = new ArrayList<>();
-                        String cldrPattern = CldrDateTimePatternGenerator.normalizePattern(cldrGen.getBestPattern(skeleton, trace));
-                        String icuPattern = CldrDateTimePatternGenerator.normalizePattern(icuGen.getBestPattern(skeleton));
-
-                        String matchResult = getDifferenceReason(cldrPattern, icuPattern);                        String traceStr = String.join(" | ", trace);
+                        String cldrPattern = normalizePattern(cldrGen.getBestPattern(skeleton, trace));
+                        String icuPattern = normalizePattern(icuGen.getBestPattern(skeleton));
+                        
+                        String matchResult = getDifferenceReason(cldrPattern, icuPattern);
+                        String traceStr = String.join(" | ", trace);
                         
                         out.print(escapeCsv(localeID));
                         out.print(",");
@@ -182,6 +183,65 @@ public class CldrDateTimePatternGeneratorCompare {
             }
         }
         return fields;
+    }
+
+    private static String normalizePattern(String pattern) {
+        if (pattern == null) return null;
+
+        // 1. Check if it should be stand-alone Month (L instead of M)
+        // It's stand-alone if there are no other fields than M.
+        boolean hasOtherFields = false;
+        boolean hasM = false;
+        boolean inQuote = false;
+        for (int i = 0; i < pattern.length(); ++i) {
+            char ch = pattern.charAt(i);
+            if (ch == '\'') {
+                inQuote = !inQuote;
+            } else if (!inQuote) {
+                if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+                    if (ch == 'M') {
+                        hasM = true;
+                    } else {
+                        hasOtherFields = true;
+                    }
+                }
+            }
+        }
+        boolean useL = hasM && !hasOtherFields;
+
+        StringBuilder sb = new StringBuilder();
+        inQuote = false;
+        for (int i = 0; i < pattern.length(); ) {
+            char ch = pattern.charAt(i);
+            if (ch == '\'') {
+                sb.append(ch);
+                inQuote = !inQuote;
+                i++;
+            } else if (inQuote) {
+                sb.append(ch);
+                i++;
+            } else {
+                if (ch == 'E') {
+                    int count = 0;
+                    while (i < pattern.length() && pattern.charAt(i) == 'E') {
+                        count++;
+                        i++;
+                    }
+                    if (count <= 3) {
+                        sb.append("EEE");
+                    } else {
+                        for (int j = 0; j < count; j++) sb.append('E');
+                    }
+                } else if (ch == 'M' && useL) {
+                    sb.append('L');
+                    i++;
+                } else {
+                    sb.append(ch);
+                    i++;
+                }
+            }
+        }
+        return sb.toString();
     }
 
     private static String escapeCsv(String s) {
