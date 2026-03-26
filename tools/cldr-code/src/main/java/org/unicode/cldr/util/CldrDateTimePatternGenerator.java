@@ -497,9 +497,12 @@ public class CldrDateTimePatternGenerator {
      * Calculates the TR35 distance between two individual fields.
      */
     private static int getSingleFieldDistance(String availField, String requestedField) {
+        if (availField.equals(requestedField)) {
+            return 0;
+        }
         int diff = 0;
         if (availField.charAt(0) != requestedField.charAt(0)) {
-            diff += 1;
+            diff += 16;
         }
         boolean isNumeric = isNumeric(availField);
         if (isNumeric != isNumeric(requestedField)) {
@@ -507,7 +510,7 @@ public class CldrDateTimePatternGenerator {
             return diff;
         }
         if (isNumeric) {
-            diff += 2;
+            diff += Math.abs(availField.length() - requestedField.length());
             return diff;
         }
         // Normalize E to EEE
