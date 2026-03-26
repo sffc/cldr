@@ -236,8 +236,6 @@ public class CldrDateTimePatternGenerator {
     public String getBestPattern(String skeleton, List<String> log) {
         if (skeleton == null || skeleton.isEmpty()) return "";
         
-        if (log != null) log.add("Requested skeleton: " + skeleton);
-        
         String origSkeleton = skeleton;
         skeleton = skeleton.replace('j', defaultHourFormatChar);
         skeleton = skeleton.replace('C', 'a');
@@ -630,12 +628,17 @@ public class CldrDateTimePatternGenerator {
                     }
                 }
                 
-                if (availF != null && patField.length() == availF.length()) {
-                    if (isNumeric(reqF) == isNumeric(availF)) {
-                        char newChar = reqF.charAt(0);
-                        for (int k = 0; k < reqF.length(); k++) res.append(newChar);
+                if (availF != null) {
+                    int catP = getLengthCategory(patField);
+                    int catA = getLengthCategory(availF);
+                    if (catP == catA) {
+                        if (isNumeric(reqF) == isNumeric(availF)) {
+                            char newChar = patField.charAt(0);
+                            for (int k = 0; k < reqF.length(); k++) res.append(newChar);
+                        } else {
+                            res.append(patField);
+                        }
                     } else {
-                        // Prevent substitution between numeric and non-numeric fields
                         res.append(patField);
                     }
                 } else {
@@ -646,6 +649,15 @@ public class CldrDateTimePatternGenerator {
             }
         }
         return res.toString();
+    }
+
+    private static int getLengthCategory(String field) {
+        if (isNumeric(field)) {
+            return field.length();
+        }
+        int len = field.length();
+        if (len <= 3) return 3;
+        return len;
     }
 
     /**
