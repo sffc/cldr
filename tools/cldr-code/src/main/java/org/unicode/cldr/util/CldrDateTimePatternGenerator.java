@@ -494,10 +494,11 @@ public class CldrDateTimePatternGenerator {
      * @return the combined dateTimeFormat pattern
      */
     private String getDateTimePattern(String dateSkeleton) {
-        boolean wideMonth = dateSkeleton.contains("MMMM") || dateSkeleton.contains("LLLL");
-        boolean abbrMonth = dateSkeleton.contains("MMM") || dateSkeleton.contains("LLL");
+        List<String> fields = splitSkeleton(dateSkeleton);
+        boolean wideMonth = fields.contains("MMMM") || fields.contains("LLLL");
+        boolean abbrMonth = fields.contains("MMM") || fields.contains("LLL");
         
-        if (wideMonth && (dateSkeleton.contains("EEEE") || dateSkeleton.contains("cccc"))) return dateTimeFormatFull;
+        if (wideMonth && (fields.contains("EEEE") || fields.contains("cccc"))) return dateTimeFormatFull;
         if (wideMonth) return dateTimeFormatLong;
         if (abbrMonth) return dateTimeFormatMedium;
         return dateTimeFormatShort;
