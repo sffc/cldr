@@ -302,15 +302,16 @@ public class CldrDateTimePatternGenerator {
         }
         
         if (availableFormats.containsKey(canonicalSkeleton)) {
-            if (log != null) log.add("Found exact match in availableFormats: " + availableFormats.get(canonicalSkeleton));
-            return availableFormats.get(canonicalSkeleton);
+            String result = availableFormats.get(canonicalSkeleton);
+            if (log != null) log.add("Found exact match in availableFormats: " + result);
+            return normalizeResult(result);
         }
 
         String dateSkeleton = getDateSkeleton(canonicalSkeleton);
         String timeSkeleton = getTimeSkeleton(canonicalSkeleton);
         
         if (dateSkeleton.length() > 0 && timeSkeleton.length() > 0) {
-            return combineDateAndTime(dateSkeleton, timeSkeleton, log);
+            return normalizeResult(combineDateAndTime(dateSkeleton, timeSkeleton, log));
         }
 
         String bestMatchSkeleton = findBestMatch(canonicalSkeleton);
@@ -320,10 +321,72 @@ public class CldrDateTimePatternGenerator {
             String pattern = expandPattern(canonicalSkeleton, bestMatchSkeleton, availableFormats.get(bestMatchSkeleton));
             if (log != null) log.add("Expanded pattern to requested lengths: " + pattern);
             
-            return appendMissingFields(pattern, canonicalSkeleton, bestMatchSkeleton, log);
+            return normalizeResult(appendMissingFields(pattern, canonicalSkeleton, bestMatchSkeleton, log));
         }
         
-        return getFallbackPattern(canonicalSkeleton, log);
+        return normalizeResult(getFallbackPattern(canonicalSkeleton, log));
+    }
+
+    /**
+     * Normalizes the final pattern according to TR35 and ICU4J conventions.
+     * 1. Converts 'M' to 'L' if it's the only field (stand-alone month).
+     * 2. Normalizes 'E' or 'EE' to 'EEE'.
+     */
+    public String normalizeResult(String pattern) {
+        if (pattern == null) return null;
+
+        boolean hasOtherFields = false;
+        boolean hasM = false;
+        boolean inQuote = false;
+        for (int i = 0; i < pattern.length(); ++i) {
+            char ch = pattern.charAt(i);
+            if (ch == '\'') {
+                inQuote = !inQuote;
+            } else if (!inQuote) {
+                if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+                    if (ch == 'M') {
+                        hasM = true;
+                    } else {
+                        hasOtherFields = true;
+                    }
+                }
+            }
+        }
+        boolean useL = hasM && !hasOtherFields;
+
+        StringBuilder sb = new StringBuilder();
+        inQuote = false;
+        for (int i = 0; i < pattern.length(); ) {
+            char ch = pattern.charAt(i);
+            if (ch == '\'') {
+                sb.append(ch);
+                inQuote = !inQuote;
+                i++;
+            } else if (inQuote) {
+                sb.append(ch);
+                i++;
+            } else {
+                if (ch == 'E') {
+                    int count = 0;
+                    while (i < pattern.length() && pattern.charAt(i) == 'E') {
+                        count++;
+                        i++;
+                    }
+                    if (count <= 3) {
+                        sb.append("EEE");
+                    } else {
+                        for (int j = 0; j < count; j++) sb.append('E');
+                    }
+                } else if (ch == 'M' && useL) {
+                    sb.append('L');
+                    i++;
+                } else {
+                    sb.append(ch);
+                    i++;
+                }
+            }
+        }
+        return sb.toString();
     }
 
     /**
