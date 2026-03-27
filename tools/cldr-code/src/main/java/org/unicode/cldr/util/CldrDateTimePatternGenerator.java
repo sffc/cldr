@@ -275,6 +275,8 @@ public class CldrDateTimePatternGenerator {
             if (dist < bestDistance) {
                 bestDistance = dist;
                 bestMatchSkeleton = availSkeleton;
+            } else if (dist == bestDistance && bestMatchSkeleton != null) {
+                bestMatchSkeleton = breakTie(bestMatchSkeleton, availSkeleton);
             }
         }
 
@@ -567,6 +569,40 @@ public class CldrDateTimePatternGenerator {
             res.add(skel.substring(start, i));
         }
         return res;
+    }
+
+    private String breakTie(String avail1, String avail2) {
+        char[] chars1 = new char[DateTimePatternGenerator.TYPE_LIMIT];
+        int[] lengths1 = new int[DateTimePatternGenerator.TYPE_LIMIT];
+        populateFields(avail1, chars1, lengths1);
+
+        char[] chars2 = new char[DateTimePatternGenerator.TYPE_LIMIT];
+        int[] lengths2 = new int[DateTimePatternGenerator.TYPE_LIMIT];
+        populateFields(avail2, chars2, lengths2);
+
+        for (int i = 0; i < DateTimePatternGenerator.TYPE_LIMIT; i++) {
+            int charDiff = chars1[i] - chars2[i];
+            if (charDiff != 0) {
+                return charDiff > 0 ? avail1 : avail2;
+            }
+            int lengthDiff = lengths1[i] - lengths2[i];
+            if (lengthDiff != 0) {
+                return lengthDiff > 0 ? avail1 : avail2;
+            }
+        }
+        return avail1;
+    }
+
+    private void populateFields(String skeleton, char[] chars, int[] lengths) {
+        for (String f : splitSkeleton(skeleton)) {
+            try {
+                int type = new com.ibm.icu.text.DateTimePatternGenerator.VariableField(f).getType();
+                if (type >= 0 && type < DateTimePatternGenerator.TYPE_LIMIT) {
+                    chars[type] = f.charAt(0);
+                    lengths[type] = f.length();
+                }
+            } catch (Exception e) {}
+        }
     }
 
     /**
