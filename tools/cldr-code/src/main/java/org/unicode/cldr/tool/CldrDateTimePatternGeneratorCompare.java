@@ -81,7 +81,7 @@ public class CldrDateTimePatternGeneratorCompare {
                     for (String skeleton : SKELETONS) {
                         List<String> trace = new ArrayList<>();
                         String cldrPattern = cldrGen.getBestPattern(skeleton, trace);
-                        String icuPattern = icuGen.getBestPattern(skeleton);
+                        String icuPattern = normalizePattern(icuGen.getBestPattern(skeleton));
                         
                         String matchResult = getDifferenceReason(cldrPattern, icuPattern);
                         String traceStr = String.join(" | ", trace);
@@ -183,6 +183,38 @@ public class CldrDateTimePatternGeneratorCompare {
             }
         }
         return fields;
+    }
+
+    private static String normalizePattern(String pattern) {
+        if (pattern == null) return null;
+        StringBuilder sb = new StringBuilder();
+        boolean inQuote = false;
+        for (int i = 0; i < pattern.length(); ) {
+            char ch = pattern.charAt(i);
+            if (ch == '\'') {
+                sb.append(ch);
+                inQuote = !inQuote;
+                i++;
+            } else if (inQuote) {
+                sb.append(ch);
+                i++;
+            } else if (ch == 'E') {
+                int count = 0;
+                while (i < pattern.length() && pattern.charAt(i) == 'E') {
+                    count++;
+                    i++;
+                }
+                if (count <= 3) {
+                    sb.append("E");
+                } else {
+                    for (int j = 0; j < count; j++) sb.append('E');
+                }
+            } else {
+                sb.append(ch);
+                i++;
+            }
+        }
+        return sb.toString();
     }
 
     private static String escapeCsv(String s) {
