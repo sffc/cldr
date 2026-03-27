@@ -133,19 +133,17 @@ public class CldrDateTimePatternGenerator {
         if (!useStock) return;
         
         for (String stock : STOCK) {
-            String dPath = "//ldml/dates/calendars/calendar[@type=\"" + calendarID + "\"]/dateFormats/dateFormatLength[@type=\"" + stock + "\"]/dateFormat[@type=\"standard\"]/pattern[@type=\"standard\"]";
-            String dsPath = "//ldml/dates/calendars/calendar[@type=\"" + calendarID + "\"]/dateFormats/dateFormatLength[@type=\"" + stock + "\"]/dateFormat[@type=\"standard\"]/datetimeSkeleton";
-            String tPath = "//ldml/dates/calendars/calendar[@type=\"" + calendarID + "\"]/timeFormats/timeFormatLength[@type=\"" + stock + "\"]/timeFormat[@type=\"standard\"]/pattern[@type=\"standard\"]";
-            String tsPath = "//ldml/dates/calendars/calendar[@type=\"" + calendarID + "\"]/timeFormats/timeFormatLength[@type=\"" + stock + "\"]/timeFormat[@type=\"standard\"]/datetimeSkeleton";
+            String dBase = String.format("//ldml/dates/calendars/calendar[@type=\"%s\"]/dateFormats/dateFormatLength[@type=\"%s\"]/dateFormat[@type=\"standard\"]", calendarID, stock);
+            String tBase = String.format("//ldml/dates/calendars/calendar[@type=\"%s\"]/timeFormats/timeFormatLength[@type=\"%s\"]/timeFormat[@type=\"standard\"]", calendarID, stock);
             
-            String dp = file.getStringValueWithBailey(dPath);
-            String ds = file.getStringValueWithBailey(dsPath);
+            String dp = file.getStringValueWithBailey(dBase + "/pattern[@type=\"standard\"]");
+            String ds = file.getStringValueWithBailey(dBase + "/datetimeSkeleton");
             if (dp != null && ds != null) {
                 availableFormats.put(canonicalizeSkeleton(ds), dp);
             }
             
-            String tp = file.getStringValueWithBailey(tPath);
-            String ts = file.getStringValueWithBailey(tsPath);
+            String tp = file.getStringValueWithBailey(tBase + "/pattern[@type=\"standard\"]");
+            String ts = file.getStringValueWithBailey(tBase + "/datetimeSkeleton");
             if (tp != null && ts != null) {
                 availableFormats.put(canonicalizeSkeleton(ts), tp);
             }
@@ -477,14 +475,7 @@ public class CldrDateTimePatternGenerator {
      * @return a skeleton containing only date fields
      */
     private String getDateSkeleton(String skeleton) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < skeleton.length(); i++) {
-            char c = skeleton.charAt(i);
-            if (DATE_FIELDS.indexOf(c) >= 0) {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
+        return filterSkeleton(skeleton, DATE_FIELDS);
     }
 
     /**
@@ -494,10 +485,14 @@ public class CldrDateTimePatternGenerator {
      * @return a skeleton containing only time fields
      */
     private String getTimeSkeleton(String skeleton) {
+        return filterSkeleton(skeleton, TIME_FIELDS);
+    }
+
+    private String filterSkeleton(String skeleton, String allowedFields) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < skeleton.length(); i++) {
             char c = skeleton.charAt(i);
-            if (TIME_FIELDS.indexOf(c) >= 0) {
+            if (allowedFields.indexOf(c) >= 0) {
                 sb.append(c);
             }
         }
@@ -513,10 +508,9 @@ public class CldrDateTimePatternGenerator {
      */
     private String getDateTimePattern(String dateSkeleton) {
         boolean wideMonth = dateSkeleton.contains("MMMM") || dateSkeleton.contains("LLLL");
-        boolean weekday = dateSkeleton.contains("EEEE") || dateSkeleton.contains("cccc") || dateSkeleton.contains("E") || dateSkeleton.contains("c");
         boolean abbrMonth = dateSkeleton.contains("MMM") || dateSkeleton.contains("LLL");
         
-        if (wideMonth && weekday && (dateSkeleton.contains("EEEE") || dateSkeleton.contains("cccc"))) return dateTimeFormatFull;
+        if (wideMonth && (dateSkeleton.contains("EEEE") || dateSkeleton.contains("cccc"))) return dateTimeFormatFull;
         if (wideMonth) return dateTimeFormatLong;
         if (abbrMonth) return dateTimeFormatMedium;
         return dateTimeFormatShort;
