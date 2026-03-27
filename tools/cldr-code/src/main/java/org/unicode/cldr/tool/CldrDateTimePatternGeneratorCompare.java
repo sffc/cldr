@@ -81,7 +81,7 @@ public class CldrDateTimePatternGeneratorCompare {
                     for (String skeleton : SKELETONS) {
                         List<String> trace = new ArrayList<>();
                         String cldrPattern = cldrGen.getBestPattern(skeleton, trace);
-                        String icuPattern = cldrGen.normalizeResult(icuGen.getBestPattern(skeleton));
+                        String icuPattern = icuGen.getBestPattern(skeleton);
                         
                         String matchResult = getDifferenceReason(cldrPattern, icuPattern);
                         String traceStr = String.join(" | ", trace);
