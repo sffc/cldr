@@ -98,6 +98,9 @@ public class CldrDateTimePatternGenerator {
         initAvailableFormats(allIds);
         initAppendItems(allAppendRequests);
         initDateTimeFormats();
+
+        // Sort available formats to eliminate tie-breaking at runtime
+        sortAvailableFormats();
     }
 
     /**
@@ -337,8 +340,6 @@ public class CldrDateTimePatternGenerator {
             if (dist < bestDistance) {
                 bestDistance = dist;
                 bestMatchSkeleton = availSkeleton;
-            } else if (dist == bestDistance && bestMatchSkeleton != null) {
-                bestMatchSkeleton = breakTie(bestMatchSkeleton, availSkeleton);
             }
         }
         // Distance of 1000 or more means no reasonable match was found (e.g. extra fields).
@@ -645,28 +646,45 @@ public class CldrDateTimePatternGenerator {
     }
 
     /**
-     * Breaks a tie between two equally distant available skeletons.
-     * The logic follows the TR35 specification for prioritizing certain field types.
+     * Sorts the available formats based on TR35 tie-breaking rules.
+     * This ensures that findBestMatch can simply take the first matching distance,
+     * eliminating the need for runtime tie-breaking.
      */
-    private String breakTie(String avail1, String avail2) {
-        int limit = DateTimePatternGenerator.TYPE_LIMIT;
-        char[] chars1 = new char[limit];
-        int[] lengths1 = new int[limit];
-        populateFields(avail1, chars1, lengths1);
-
-        char[] chars2 = new char[limit];
-        int[] lengths2 = new int[limit];
-        populateFields(avail2, chars2, lengths2);
-
-        for (int i = 0; i < limit; i++) {
-            if (chars1[i] != chars2[i]) {
-                return chars1[i] > chars2[i] ? avail1 : avail2;
-            }
-            if (lengths1[i] != lengths2[i]) {
-                return lengths1[i] > lengths2[i] ? avail1 : avail2;
-            }
+    private void sortAvailableFormats() {
+        Map<String, char[]> charsMap = new HashMap<>();
+        Map<String, int[]> lengthsMap = new HashMap<>();
+        for (String skel : availableFormats.keySet()) {
+            int limit = DateTimePatternGenerator.TYPE_LIMIT;
+            char[] chars = new char[limit];
+            int[] lengths = new int[limit];
+            populateFields(skel, chars, lengths);
+            charsMap.put(skel, chars);
+            lengthsMap.put(skel, lengths);
         }
-        return avail1;
+
+        List<Map.Entry<String, String>> entries = new ArrayList<>(availableFormats.entrySet());
+        entries.sort((e1, e2) -> {
+            char[] chars1 = charsMap.get(e1.getKey());
+            char[] chars2 = charsMap.get(e2.getKey());
+            int[] lengths1 = lengthsMap.get(e1.getKey());
+            int[] lengths2 = lengthsMap.get(e2.getKey());
+
+            int limit = DateTimePatternGenerator.TYPE_LIMIT;
+            for (int i = 0; i < limit; i++) {
+                if (chars1[i] != chars2[i]) {
+                    return chars2[i] - chars1[i];
+                }
+                if (lengths1[i] != lengths2[i]) {
+                    return lengths2[i] - lengths1[i];
+                }
+            }
+            return e1.getKey().compareTo(e2.getKey());
+        });
+
+        availableFormats.clear();
+        for (Map.Entry<String, String> entry : entries) {
+            availableFormats.put(entry.getKey(), entry.getValue());
+        }
     }
 
     /**
