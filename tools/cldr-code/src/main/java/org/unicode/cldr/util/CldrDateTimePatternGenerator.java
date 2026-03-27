@@ -214,24 +214,11 @@ public class CldrDateTimePatternGenerator {
      * Loads the four standard date-time glue patterns (full, long, medium, short).
      */
     private void initDateTimeFormats() {
-        String dateTimeFormatLengthPattern = "//ldml/dates/calendars/calendar[@type=\"%s\"]/dateTimeFormats/dateTimeFormatLength[@type=\"%s\"]/dateTimeFormat[@type=\"standard\"]/pattern[@type=\"standard\"]";
-        
-        dateTimeFormatFull = file.getStringValueWithBailey(
-            String.format(dateTimeFormatLengthPattern, calendarID, "full"),
-            dateTimeFormatFull
-        );
-        dateTimeFormatLong = file.getStringValueWithBailey(
-            String.format(dateTimeFormatLengthPattern, calendarID, "long"),
-            dateTimeFormatLong
-        );
-        dateTimeFormatMedium = file.getStringValueWithBailey(
-            String.format(dateTimeFormatLengthPattern, calendarID, "medium"),
-            dateTimeFormatMedium
-        );
-        dateTimeFormatShort = file.getStringValueWithBailey(
-            String.format(dateTimeFormatLengthPattern, calendarID, "short"),
-            dateTimeFormatShort
-        );
+        String base = "//ldml/dates/calendars/calendar[@type=\"%s\"]/dateTimeFormats/dateTimeFormatLength[@type=\"%s\"]/dateTimeFormat[@type=\"standard\"]/pattern[@type=\"standard\"]";
+        dateTimeFormatFull = file.getStringValueWithBailey(String.format(base, calendarID, "full"), dateTimeFormatFull);
+        dateTimeFormatLong = file.getStringValueWithBailey(String.format(base, calendarID, "long"), dateTimeFormatLong);
+        dateTimeFormatMedium = file.getStringValueWithBailey(String.format(base, calendarID, "medium"), dateTimeFormatMedium);
+        dateTimeFormatShort = file.getStringValueWithBailey(String.format(base, calendarID, "short"), dateTimeFormatShort);
     }
 
     /**
