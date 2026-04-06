@@ -2,6 +2,7 @@ package org.unicode.cldr.util;
 
 import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.DateTimePatternGenerator;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -893,6 +894,18 @@ public class CldrDateTimePatternGenerator {
     public DateTimePatternGenerator getIcu4jGenerator() {
         DateTimePatternGenerator icuGen = DateTimePatternGenerator.getEmptyInstance();
         icuGen.setDefaultHourFormatChar(defaultHourFormatChar);
+
+        // TODO: ICU4J's DateTimePatternGenerator.getEmptyInstance() doesn't initialize
+        // allowedHourFormats, causing an NPE in getBestPattern for skeletons containing 'C'.
+        // Use reflection as a last resort until a public API is added.
+        try {
+            Field field = DateTimePatternGenerator.class.getDeclaredField("allowedHourFormats");
+            field.setAccessible(true);
+            field.set(icuGen, allowedHourFormats);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            // If reflection fails, some skeletons (e.g., 'C') will still crash in ICU4J.
+        }
+
         icuGen.setDateTimeFormat(DateFormat.FULL, dateTimeFormatFull);
         icuGen.setDateTimeFormat(DateFormat.LONG, dateTimeFormatLong);
         icuGen.setDateTimeFormat(DateFormat.MEDIUM, dateTimeFormatMedium);
