@@ -1,41 +1,64 @@
 package org.unicode.cldr.tool;
 
+import com.ibm.icu.text.DateTimePatternGenerator;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-
-import com.ibm.icu.text.DateFormat;
-import com.ibm.icu.text.DateTimePatternGenerator;
-import com.ibm.icu.util.ULocale;
-
 import org.unicode.cldr.draft.FileUtilities;
 import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
+import org.unicode.cldr.util.CLDRPaths;
 import org.unicode.cldr.util.CLDRTool;
 import org.unicode.cldr.util.CLDRURLS;
 import org.unicode.cldr.util.CldrDateTimePatternGenerator;
 import org.unicode.cldr.util.Factory;
-import org.unicode.cldr.util.CLDRPaths;
 
 /**
  * Compares the behavior of CldrDateTimePatternGenerator against ICU4J's DateTimePatternGenerator.
  */
 @CLDRTool(
-    alias = "compare-cldr-dtpg",
-    description = "Compares CldrDateTimePatternGenerator against ICU4J DateTimePatternGenerator",
-    url = CLDRURLS.TOOLSURL)
+        alias = "compare-cldr-dtpg",
+        description =
+                "Compares CldrDateTimePatternGenerator against ICU4J DateTimePatternGenerator",
+        url = CLDRURLS.TOOLSURL)
 public class CldrDateTimePatternGeneratorCompare {
     private static final String[] SKELETONS = {
-        "y", "yM", "yMd", "yMEd", "yMMM", "yMMMd", "yMMMEd", "yMMMM", "yMMMMd", "yMMMMEEEEd",
-        "M", "Md", "MEd", "MMM", "MMMd", "MMMEd", "MMMM", "MMMMd", "MMMMEEEEd",
-        "j", "jm", "jms", "Hm", "Hms", "hm", "hms",
-        "Mdjm", "MMMdjm", "MMMMdjm", "yMdjms", "yMMMdjms", "yMMMMdjms"
+        "y",
+        "yM",
+        "yMd",
+        "yMEd",
+        "yMMM",
+        "yMMMd",
+        "yMMMEd",
+        "yMMMM",
+        "yMMMMd",
+        "yMMMMEEEEd",
+        "M",
+        "Md",
+        "MEd",
+        "MMM",
+        "MMMd",
+        "MMMEd",
+        "MMMM",
+        "MMMMd",
+        "MMMMEEEEd",
+        "j",
+        "jm",
+        "jms",
+        "Hm",
+        "Hms",
+        "hm",
+        "hms",
+        "Mdjm",
+        "MMMdjm",
+        "MMMMdjm",
+        "yMdjms",
+        "yMMMdjms",
+        "yMMMMdjms"
     };
 
     private static final String[] CALENDARS = {
@@ -44,23 +67,25 @@ public class CldrDateTimePatternGeneratorCompare {
 
     public static void main(String[] args) throws IOException {
         String filter = args.length > 0 ? args[0] : ".*";
-        
+
         CLDRConfig config = CLDRConfig.getInstance();
         Factory factory = config.getCldrFactory();
         Set<String> locales = factory.getAvailableLanguages();
-        
+
         String outputDir = CLDRPaths.CHART_DIRECTORY + "/verify/dates/";
         java.io.File dir = new java.io.File(outputDir);
         if (!dir.exists()) {
             dir.mkdirs();
         }
         String filename = "dtpg_comparison.csv";
-        
-        System.out.println("Generating comparison to " + outputDir + filename + " with filter " + filter);
-        
+
+        System.out.println(
+                "Generating comparison to " + outputDir + filename + " with filter " + filter);
+
         try (PrintWriter out = FileUtilities.openUTF8Writer(outputDir, filename)) {
             // Header
-            out.println("Locale,Calendar,Skeleton,CldrDTPG Pattern,ICU4J DTPG Pattern,Match?,Trace");
+            out.println(
+                    "Locale,Calendar,Skeleton,CldrDTPG Pattern,ICU4J DTPG Pattern,Match?,Trace");
 
             int count = 0;
             List<String> sortedLocales = new ArrayList<>(locales);
@@ -69,23 +94,24 @@ public class CldrDateTimePatternGeneratorCompare {
             for (String localeID : sortedLocales) {
                 if (localeID.equals("root")) continue;
                 if (!localeID.matches(filter)) continue;
-                
+
                 System.out.println("Processing locale: " + localeID);
                 CLDRFile cldrFile = factory.make(localeID, true);
 
                 for (String calendar : CALENDARS) {
-                    CldrDateTimePatternGenerator cldrGen = new CldrDateTimePatternGenerator(cldrFile, calendar, false);
-                    
+                    CldrDateTimePatternGenerator cldrGen =
+                            new CldrDateTimePatternGenerator(cldrFile, calendar, false);
+
                     DateTimePatternGenerator icuGen = cldrGen.getIcu4jGenerator();
 
                     for (String skeleton : SKELETONS) {
                         List<String> trace = new ArrayList<>();
                         String cldrPattern = cldrGen.getBestPattern(skeleton, trace);
                         String icuPattern = normalizePattern(icuGen.getBestPattern(skeleton));
-                        
+
                         String matchResult = getDifferenceReason(cldrPattern, icuPattern);
                         String traceStr = String.join(" | ", trace);
-                        
+
                         out.print(escapeCsv(localeID));
                         out.print(",");
                         out.print(escapeCsv(calendar));
@@ -100,7 +126,7 @@ public class CldrDateTimePatternGeneratorCompare {
                         out.print(",");
                         out.print(escapeCsv(traceStr));
                         out.println();
-                        
+
                         count++;
                     }
                 }
@@ -138,7 +164,7 @@ public class CldrDateTimePatternGeneratorCompare {
         for (String f : cldrFields) cldrOrder.add(f.charAt(0));
         List<Character> icuOrder = new ArrayList<>();
         for (String f : icuFields) icuOrder.add(f.charAt(0));
-        
+
         if (!cldrOrder.equals(icuOrder)) {
             return "NO: Field order mismatch";
         }

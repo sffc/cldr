@@ -3,11 +3,9 @@ package org.unicode.cldr.util;
 import com.google.common.collect.ImmutableMap;
 import com.ibm.icu.impl.Row.R3;
 import com.ibm.icu.text.Bidi;
-import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.DateIntervalFormat;
 import com.ibm.icu.text.DateIntervalInfo;
 import com.ibm.icu.text.DateTimePatternGenerator;
-import org.unicode.cldr.util.CldrDateTimePatternGenerator;
 import com.ibm.icu.text.DecimalFormat;
 import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.SimpleDateFormat;
@@ -25,7 +23,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -116,10 +113,7 @@ public class DateTimeFormats {
         "zone"
     };
 
-    /**
-     * The names used in appendItems in CLDR.
-     * These match the ICU field indices.
-     */
+    /** The names used in appendItems in CLDR. These match the ICU field indices. */
     public static final String[] APPEND_ITEM_NAMES = {
         "Era",
         "Year",
@@ -157,13 +151,17 @@ public class DateTimeFormats {
     /** Characters that are numeric if length is 1 or 2, and text otherwise. */
     public static final String NUMERIC_OR_TEXT_FIELDS = "MLQqec";
 
-    /** Sets of related field characters that represent the same semantic field (e.g., M and L for Month). */
+    /**
+     * Sets of related field characters that represent the same semantic field (e.g., M and L for
+     * Month).
+     */
     public static final String[] RELATED_FIELD_SETS = {
         "yYruU", "ML", "wW", "dDFg", "Eec", "abB", "hHKk", "sSA", "zZOvVXx"
     };
 
     /**
      * Maps a CLDR appendItem request name to an ICU field index.
+     *
      * @param request the request name, e.g., "Era"
      * @return the ICU field index, or -1 if not found
      */
@@ -178,6 +176,7 @@ public class DateTimeFormats {
 
     /**
      * Maps a CLDR field type to an ICU field index.
+     *
      * @param key the field type, e.g., "era"
      * @return the ICU field index, or -1 if not found
      */
@@ -192,13 +191,17 @@ public class DateTimeFormats {
 
     /**
      * Gets the CLDR appendItem request name for a field character.
+     *
      * @param fieldChar the pattern character, e.g., 'G'
      * @return the request name, e.g., "Era", or null if not found
      */
     public static String getAppendRequestName(char fieldChar) {
         int field = -1;
         try {
-            field = new com.ibm.icu.text.DateTimePatternGenerator.VariableField(String.valueOf(fieldChar)).getType();
+            field =
+                    new com.ibm.icu.text.DateTimePatternGenerator.VariableField(
+                                    String.valueOf(fieldChar))
+                            .getType();
         } catch (Exception e) {
             return null;
         }
@@ -211,13 +214,17 @@ public class DateTimeFormats {
 
     /**
      * Gets the CLDR field display name key for a field character.
+     *
      * @param fieldChar the pattern character, e.g., 'G'
      * @return the field name key, e.g., "era", or null if not found
      */
     public static String getFieldDisplayNameKey(char fieldChar) {
         int field = -1;
         try {
-            field = new com.ibm.icu.text.DateTimePatternGenerator.VariableField(String.valueOf(fieldChar)).getType();
+            field =
+                    new com.ibm.icu.text.DateTimePatternGenerator.VariableField(
+                                    String.valueOf(fieldChar))
+                            .getType();
         } catch (Exception e) {
             return null;
         }
