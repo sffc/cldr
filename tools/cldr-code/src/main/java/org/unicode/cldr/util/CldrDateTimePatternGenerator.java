@@ -410,40 +410,6 @@ public class CldrDateTimePatternGenerator {
         return sb.toString();
     }
 
-    // private String removeDayPeriods(String pattern) {
-    //     StringBuilder sb = new StringBuilder();
-    //     boolean inQuotes = false;
-    //     for (int i = 0; i < pattern.length(); ) {
-    //         char c = pattern.charAt(i);
-    //         if (c == '\'') {
-    //             inQuotes = !inQuotes;
-    //             sb.append(c);
-    //             i++;
-    //             continue;
-    //         }
-    //         if (inQuotes) {
-    //             sb.append(c);
-    //             i++;
-    //             continue;
-    //         }
-    //         if (c == 'a' || c == 'b' || c == 'B') {
-    //             // Skip the field
-    //             while (i < pattern.length() && pattern.charAt(i) == c) i++;
-    //             continue;
-    //         }
-    //         sb.append(c);
-    //         i++;
-    //     }
-    //     // Cleanup: remove narrow no-break space (U+202F) and other spaces around removed fields.
-    //     return sb.toString()
-    //             .replace("\u202f", " ")
-    //             .replaceAll("\\s{2,}", " ")
-    //             .replaceAll("\\s+([\\.:,])", "$1")
-    //             .replaceAll("([\\.:,])\\s+", "$1 ")
-    //             .trim()
-    //             .replaceAll("^[:\\s\u202f]+|[:\\s\u202f]+$", "");
-    // }
-
     /** Combines date and time patterns using the appropriate dateTimeFormat glue pattern. */
     private String combineDateAndTime(String dateSkeleton, String timeSkeleton, List<String> log) {
         if (log != null)
@@ -876,27 +842,6 @@ public class CldrDateTimePatternGenerator {
             if (reqF != null) {
                 String availF = getMatchingField(availMap, c);
                 if (availF != null) {
-                    // // ICU4J special case: skip hour field adjustment by default,
-                    // // EXCEPT if the requested length is 2 and the pattern is 1, and it's an hour
-                    // field.
-                    // if (c == 'h' || c == 'H' || c == 'k' || c == 'K') {
-                    //     if (reqF.length() == 2 && patField.length() == 1) {
-                    //          // Force expansion to 2 digits for JJ/CC etc if the pattern has 1.
-                    //          res.append(patField.charAt(0));
-                    //          res.append(patField.charAt(0));
-                    //          continue;
-                    //     }
-                    //     // Also, if the requested character is different from the pattern,
-                    //     // we might need to adjust length based on the requested character.
-                    //     // For example J maps to H, and matches HH.
-                    //     if (reqF.charAt(0) != patField.charAt(0)) {
-                    //          for (int k = 0; k < reqF.length(); k++)
-                    // res.append(patField.charAt(0));
-                    //          continue;
-                    //     }
-                    //     res.append(patField);
-                    //     continue;
-                    // }
                     // Only expand if categories match and numeric/text status is consistent.
                     if (getLengthCategory(patField) == getLengthCategory(availF)) {
                         if (isNumeric(reqF) == isNumeric(availF)) {
