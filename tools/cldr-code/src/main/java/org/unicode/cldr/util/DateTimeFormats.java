@@ -156,7 +156,7 @@ public class DateTimeFormats {
      * Month).
      */
     public static final String[] RELATED_FIELD_SETS = {
-        "yYruU", "ML", "wW", "dDFg", "Eec", "abB", "hHKk", "sSA", "zZOvVXx"
+        "yYruU", "ML", "wW", "d", "D", "F", "g", "Eec", "abB", "hHKk", "sSA", "zZOvVXx"
     };
 
     /**

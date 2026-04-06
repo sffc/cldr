@@ -512,7 +512,23 @@ public class CldrDateTimePatternGenerator {
         return appendFormat
                 .replace("{0}", pattern)
                 .replace("{1}", firstFieldPattern)
-                .replace("{2}", fieldDisplayName);
+                .replace("{2}", quote(fieldDisplayName));
+    }
+
+    private String quote(String s) {
+        if (s == null || s.isEmpty()) return s;
+        StringBuilder sb = new StringBuilder();
+        sb.append('\'');
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\'') {
+                sb.append("''");
+            } else {
+                sb.append(c);
+            }
+        }
+        sb.append('\'');
+        return sb.toString();
     }
 
     /**
@@ -547,8 +563,13 @@ public class CldrDateTimePatternGenerator {
     private String getBasicPattern(String field) {
         String p = availableFormats.get(field);
         if (p != null) return p;
+        // Weekday in skeleton is E but it is EEE in patterns
+        if (field.equals("E")) {
+            field = "EEE";
+        }
         for (String avail : availableFormats.keySet()) {
-            if (avail.length() == field.length()
+            if (splitSkeleton(avail).size() == 1
+                    && avail.length() == field.length()
                     && areFieldsRelated(avail.charAt(0), field.charAt(0))) {
                 if (isNumeric(avail) == isNumeric(field)) {
                     return expandPattern(field, avail, availableFormats.get(avail));
@@ -847,7 +868,12 @@ public class CldrDateTimePatternGenerator {
                     if (getLengthCategory(patField) == getLengthCategory(availF)) {
                         if (isNumeric(reqF) == isNumeric(availF)) {
                             char newChar = patField.charAt(0);
-                            for (int k = 0; k < reqF.length(); k++) res.append(newChar);
+                            int kLen = reqF.length();
+                            // Weekday in skeleton is E but it is EEE in patterns
+                            if ((newChar == 'E' || newChar == 'c' || newChar == 'e') && kLen < 3) {
+                                kLen = 3;
+                            }
+                            for (int k = 0; k < kLen; k++) res.append(newChar);
                             continue;
                         }
                     }
