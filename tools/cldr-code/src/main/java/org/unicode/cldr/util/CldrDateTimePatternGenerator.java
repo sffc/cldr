@@ -25,6 +25,7 @@ public class CldrDateTimePatternGenerator {
     private final boolean useStock;
 
     private char defaultHourFormatChar = 'H';
+    private String[] allowedHourFormats = {"H"};
     private Map<String, String> availableFormats = new LinkedHashMap<>();
     private Map<String, String> appendItems = new LinkedHashMap<>();
     private Map<String, String> fieldNames = new LinkedHashMap<>();
@@ -111,20 +112,25 @@ public class CldrDateTimePatternGenerator {
         // (h, H, K, or k), as determined by the preferred attribute of the hours element 
         // in supplemental data."
         SupplementalDataInfo sdi = SupplementalDataInfo.getInstance();
-        CLDRLocale loc = CLDRLocale.getInstance(file.getLocaleID());
-        String region = loc.getCountry();
-        if (region == null || region.isEmpty()) {
-            CLDRLocale max = loc.getMaximal();
-            if (max != null) {
-                region = max.getCountry();
+        String localeID = file.getLocaleID();
+        PreferredAndAllowedHour pref = sdi.getTimeData().get(localeID);
+        if (pref == null) {
+            CLDRLocale loc = CLDRLocale.getInstance(localeID);
+            String region = loc.getCountry();
+            if (region == null || region.isEmpty()) {
+                CLDRLocale max = loc.getMaximal();
+                if (max != null) {
+                    region = max.getCountry();
+                }
             }
+            pref = sdi.getTimeData().get(region);
         }
-        PreferredAndAllowedHour pref = sdi.getTimeData().get(region);
         if (pref == null) {
             pref = sdi.getTimeData().get("001");
         }
         if (pref != null) {
             defaultHourFormatChar = pref.preferred.toString().charAt(0);
+            allowedHourFormats = pref.allowed.stream().map(Object::toString).toArray(String[]::new);
         }
     }
 
@@ -277,11 +283,38 @@ public class CldrDateTimePatternGenerator {
         if (skeleton == null || skeleton.isEmpty()) return "";
         
         String origSkeleton = skeleton;
-        skeleton = skeleton.replace('j', defaultHourFormatChar);
-        skeleton = skeleton.replace('C', 'a');
+        StringBuilder skeletonCopy = new StringBuilder();
+        for (int patPos = 0; patPos < skeleton.length(); patPos++) {
+            char patChr = skeleton.charAt(patPos);
+            if (patChr == 'j' || patChr == 'C') {
+                int extraLen = 0;
+                while (patPos+1 < skeleton.length() && skeleton.charAt(patPos+1) == patChr) {
+                    extraLen++;
+                    patPos++;
+                }
+
+                // This matches TR35 logic for j, J, and C skeleton field length handling.
+                int hourLen = 1 + (extraLen & 1);
+                int dayPeriodLen = (extraLen < 2)? 1: 3 + (extraLen >> 1);
+                
+                String style = (patChr == 'j') ? String.valueOf(defaultHourFormatChar) : allowedHourFormats[0];
+                for (int i = 0; i < style.length(); i++) {
+                    char c = style.charAt(i);
+                    int len = (c == 'h' || c == 'H' || c == 'k' || c == 'K') ? hourLen : dayPeriodLen;
+                    for (int k = 0; k < len; k++) {
+                        skeletonCopy.append(c);
+                    }
+                }
+            } else if (patChr == 'J') {
+                skeletonCopy.append(defaultHourFormatChar);
+            } else {
+                skeletonCopy.append(patChr);
+            }
+        }
+        skeleton = skeletonCopy.toString();
         
         if (log != null && !origSkeleton.equals(skeleton)) {
-            log.add("Replaced 'j/C' -> '" + defaultHourFormatChar + "/a': " + skeleton);
+            log.add("Mapped metacharacters: " + origSkeleton + " -> " + skeleton);
         }
         
         String canonicalSkeleton = canonicalizeSkeleton(skeleton);
