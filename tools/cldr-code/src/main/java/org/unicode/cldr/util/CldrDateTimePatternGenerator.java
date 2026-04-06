@@ -10,8 +10,6 @@ import java.util.Set;
 
 import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.DateTimePatternGenerator;
-import com.ibm.icu.util.Output;
-import org.unicode.cldr.util.XMLSource;
 
 /**
  * A generator that produces the best localized date/time pattern for a given skeleton.
@@ -26,9 +24,9 @@ public class CldrDateTimePatternGenerator {
 
     private char defaultHourFormatChar = 'H';
     private String[] allowedHourFormats = {"H"};
-    private Map<String, String> availableFormats = new LinkedHashMap<>();
-    private Map<String, String> appendItems = new LinkedHashMap<>();
-    private Map<String, String> fieldNames = new LinkedHashMap<>();
+    private final Map<String, String> availableFormats = new LinkedHashMap<>();
+    private final Map<String, String> appendItems = new LinkedHashMap<>();
+    private final Map<String, String> fieldNames = new LinkedHashMap<>();
 
     private String dateTimeFormatFull = "{1} {0}";
     private String dateTimeFormatLong = "{1} {0}";
@@ -308,14 +306,18 @@ public class CldrDateTimePatternGenerator {
                 int dayPeriodLen = (extraLen < 2)? 1: 3 + (extraLen >> 1);
                 
                 String style;
-                if (patChr == 'J') {
+                switch (patChr) {
+                case 'J':
                     // Find the H pattern to avoid the day period
                     style = "H";
                     dayPeriodLen = 0;
-                } else if (patChr == 'j') {
+                    break;
+                case 'j':
                     style = String.valueOf(defaultHourFormatChar);
-                } else { // patChr == 'C'
+                    break;
+                default: // patChr == 'C'
                     style = allowedHourFormats[0];
+                    break;
                 }
                 
                 for (int i = 0; i < style.length(); i++) {
@@ -599,13 +601,20 @@ public class CldrDateTimePatternGenerator {
      * @return the combined dateTimeFormat pattern
      */
     private String getDateTimePattern(String dateSkeleton) {
-        List<String> fields = splitSkeleton(dateSkeleton);
-        boolean wideMonth = fields.contains("MMMM") || fields.contains("LLLL");
-        boolean abbrMonth = fields.contains("MMM") || fields.contains("LLL");
-        
-        if (wideMonth && (fields.contains("EEEE") || fields.contains("cccc"))) return dateTimeFormatFull;
-        if (wideMonth) return dateTimeFormatLong;
-        if (abbrMonth) return dateTimeFormatMedium;
+        int maxMonthLen = 0;
+        int maxWeekdayLen = 0;
+        for (String field : splitSkeleton(dateSkeleton)) {
+            char c = field.charAt(0);
+            if (c == 'M' || c == 'L') {
+                maxMonthLen = Math.max(maxMonthLen, field.length());
+            } else if (c == 'E' || c == 'c') {
+                maxWeekdayLen = Math.max(maxWeekdayLen, field.length());
+            }
+        }
+
+        if (maxMonthLen >= 4 && maxWeekdayLen >= 4) return dateTimeFormatFull;
+        if (maxMonthLen >= 4) return dateTimeFormatLong;
+        if (maxMonthLen >= 3) return dateTimeFormatMedium;
         return dateTimeFormatShort;
     }
 
