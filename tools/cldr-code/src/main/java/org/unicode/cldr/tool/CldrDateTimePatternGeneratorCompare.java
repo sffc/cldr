@@ -212,6 +212,9 @@ public class CldrDateTimePatternGeneratorCompare {
                 System.out.println("Processing locale: " + localeID);
                 CLDRFile cldrFile = factory.make(localeID, true);
 
+                boolean localeHasDiffs = false;
+                List<String> rowsForThisLocale = new ArrayList<>();
+
                 for (String calendar : CALENDARS) {
                     CldrDateTimePatternGenerator cldrGen =
                             new CldrDateTimePatternGenerator(cldrFile, calendar, false);
@@ -224,25 +227,43 @@ public class CldrDateTimePatternGeneratorCompare {
                         String icuPattern = normalizePattern(icuGen.getBestPattern(skeleton));
 
                         String matchResult = getDifferenceReason(cldrPattern, icuPattern);
-                        String traceStr = String.join(" | ", trace);
+                        if (!matchResult.equals("YES")) {
+                            localeHasDiffs = true;
+                            String traceStr = String.join(" | ", trace);
+                            StringBuilder sb = new StringBuilder();
+                            sb.append(escapeCsv(localeID)).append(",");
+                            sb.append(escapeCsv(calendar)).append(",");
+                            sb.append(escapeCsv(skeleton)).append(",");
+                            sb.append(escapeCsv(cldrPattern)).append(",");
+                            sb.append(escapeCsv(icuPattern)).append(",");
+                            sb.append(escapeCsv(matchResult)).append(",");
+                            sb.append(escapeCsv(traceStr));
+                            rowsForThisLocale.add(sb.toString());
+                        }
+                    }
+                }
 
-                        out.print(escapeCsv(localeID));
-                        out.print(",");
-                        out.print(escapeCsv(calendar));
-                        out.print(",");
-                        out.print(escapeCsv(skeleton));
-                        out.print(",");
-                        out.print(escapeCsv(cldrPattern));
-                        out.print(",");
-                        out.print(escapeCsv(icuPattern));
-                        out.print(",");
-                        out.print(escapeCsv(matchResult));
-                        out.print(",");
-                        out.print(escapeCsv(traceStr));
-                        out.println();
-
+                if (localeHasDiffs) {
+                    for (String row : rowsForThisLocale) {
+                        out.println(row);
                         count++;
                     }
+                } else {
+                    out.print(escapeCsv(localeID));
+                    out.print(",");
+                    out.print(escapeCsv("ALL"));
+                    out.print(",");
+                    out.print(escapeCsv("ALL"));
+                    out.print(",");
+                    out.print(escapeCsv(""));
+                    out.print(",");
+                    out.print(escapeCsv(""));
+                    out.print(",");
+                    out.print(escapeCsv("YES"));
+                    out.print(",");
+                    out.print(escapeCsv(""));
+                    out.println();
+                    count++;
                 }
                 out.flush();
             }
