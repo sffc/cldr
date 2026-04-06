@@ -58,7 +58,121 @@ public class CldrDateTimePatternGeneratorCompare {
         "MMMMdjm",
         "yMdjms",
         "yMMMdjms",
-        "yMMMMdjms"
+        "yMMMMdjms",
+
+        // New additions:
+        // Era + Year combinations
+        "Gy",
+        "GyM",
+        "GyMMM",
+        "GyMMMd",
+
+        // Different year types
+        "u",
+        "U",
+        "r",
+
+        // Quarters
+        "Q",
+        "yQ",
+        "yQQQ",
+        "yQQQQ",
+        "q",
+        "yq",
+        "yqqq",
+        "yqqqq",
+
+        // Stand-alone Month and Weekday
+        "L",
+        "LLLL",
+        "cccc",
+        "eeee",
+
+        // Week of Year and Week of Month
+        "Yw",
+        "Yww",
+        "YwE",
+        "W",
+        "MMMMW",
+
+        // Day of Year and Day of Week in Month
+        "D",
+        "yD",
+        "F",
+        "MF",
+
+        // Different hour cycles and input symbols
+        "h",
+        "hh",
+        "H",
+        "HH",
+        "K",
+        "KK",
+        "k",
+        "kk",
+        "jj",
+        "jjj",
+        "jjjj",
+        "jjjjj",
+        "jjjjjj",
+        "J",
+        "JJ",
+        "C",
+        "CC",
+        "CCC",
+        "CCCC",
+        "CCCCC",
+        "CCCCCC",
+
+        // Minutes and Seconds
+        "m",
+        "s",
+        "ss",
+        "S",
+        "SSS",
+        "msS",
+        "A",
+
+        // Zones
+        "z",
+        "zzzz",
+        "Z",
+        "ZZZZ",
+        "ZZZZZ",
+        "O",
+        "OOOO",
+        "v",
+        "vvvv",
+        "V",
+        "VV",
+        "VVV",
+        "VVVV",
+        "X",
+        "XXXX",
+        "x",
+        "xxxx",
+
+        // Zone combinations
+        "yMz",
+        "yMv",
+        "yMVVVV",
+        "yMXXXX",
+
+        // Unusual / non-availableFormats combinations
+        "GE",
+        "GQ",
+        "MdH",
+        "yMdHms",
+        "yMdHmsZ",
+        "EBhm",
+        "hB",
+        "hb",
+
+        // Test field normalization/canonicalization
+        "dM",
+        "My",
+        "g",
+        "a",
     };
 
     private static final String[] CALENDARS = {
