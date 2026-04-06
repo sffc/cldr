@@ -281,12 +281,22 @@ public class CldrDateTimePatternGenerator {
      */
     public String getBestPattern(String skeleton, List<String> log) {
         if (skeleton == null || skeleton.isEmpty()) return "";
-        
+        boolean skeletonHasCapJ = skeleton.contains("J");
+        String result = getBestPatternInternal(skeleton, log);
+        if (skeletonHasCapJ) {
+            // result = removeDayPeriods(result);
+            // After removing day periods, we MUST ensure the hour field matches defaultHourFormatChar
+            result = replaceHourCharacter(result, defaultHourFormatChar);
+        }
+        return result;
+    }
+
+    private String getBestPatternInternal(String skeleton, List<String> log) {
         String origSkeleton = skeleton;
         StringBuilder skeletonCopy = new StringBuilder();
         for (int patPos = 0; patPos < skeleton.length(); patPos++) {
             char patChr = skeleton.charAt(patPos);
-            if (patChr == 'j' || patChr == 'C') {
+            if (patChr == 'j' || patChr == 'C' || patChr == 'J') {
                 int extraLen = 0;
                 while (patPos+1 < skeleton.length() && skeleton.charAt(patPos+1) == patChr) {
                     extraLen++;
@@ -297,7 +307,17 @@ public class CldrDateTimePatternGenerator {
                 int hourLen = 1 + (extraLen & 1);
                 int dayPeriodLen = (extraLen < 2)? 1: 3 + (extraLen >> 1);
                 
-                String style = (patChr == 'j') ? String.valueOf(defaultHourFormatChar) : allowedHourFormats[0];
+                String style;
+                if (patChr == 'J') {
+                    // Find the H pattern to avoid the day period
+                    style = "H";
+                    dayPeriodLen = 0;
+                } else if (patChr == 'j') {
+                    style = String.valueOf(defaultHourFormatChar);
+                } else { // patChr == 'C'
+                    style = allowedHourFormats[0];
+                }
+                
                 for (int i = 0; i < style.length(); i++) {
                     char c = style.charAt(i);
                     int len = (c == 'h' || c == 'H' || c == 'k' || c == 'K') ? hourLen : dayPeriodLen;
@@ -305,8 +325,6 @@ public class CldrDateTimePatternGenerator {
                         skeletonCopy.append(c);
                     }
                 }
-            } else if (patChr == 'J') {
-                skeletonCopy.append(defaultHourFormatChar);
             } else {
                 skeletonCopy.append(patChr);
             }
@@ -347,6 +365,59 @@ public class CldrDateTimePatternGenerator {
         
         return getFallbackPattern(canonicalSkeleton, log);
     }
+
+    private String replaceHourCharacter(String pattern, char newHourChar) {
+        StringBuilder sb = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c == '\'') {
+                inQuotes = !inQuotes;
+                sb.append(c);
+                continue;
+            }
+            if (!inQuotes && (c == 'h' || c == 'H' || c == 'k' || c == 'K')) {
+                sb.append(newHourChar);
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    // private String removeDayPeriods(String pattern) {
+    //     StringBuilder sb = new StringBuilder();
+    //     boolean inQuotes = false;
+    //     for (int i = 0; i < pattern.length(); ) {
+    //         char c = pattern.charAt(i);
+    //         if (c == '\'') {
+    //             inQuotes = !inQuotes;
+    //             sb.append(c);
+    //             i++;
+    //             continue;
+    //         }
+    //         if (inQuotes) {
+    //             sb.append(c);
+    //             i++;
+    //             continue;
+    //         }
+    //         if (c == 'a' || c == 'b' || c == 'B') {
+    //             // Skip the field
+    //             while (i < pattern.length() && pattern.charAt(i) == c) i++;
+    //             continue;
+    //         }
+    //         sb.append(c);
+    //         i++;
+    //     }
+    //     // Cleanup: remove narrow no-break space (U+202F) and other spaces around removed fields.
+    //     return sb.toString()
+    //             .replace("\u202f", " ")
+    //             .replaceAll("\\s{2,}", " ")
+    //             .replaceAll("\\s+([\\.:,])", "$1")
+    //             .replaceAll("([\\.:,])\\s+", "$1 ")
+    //             .trim()
+    //             .replaceAll("^[:\\s\u202f]+|[:\\s\u202f]+$", "");
+    // }
 
     /**
      * Combines date and time patterns using the appropriate dateTimeFormat glue pattern.
@@ -773,6 +844,25 @@ public class CldrDateTimePatternGenerator {
             if (reqF != null) {
                 String availF = getMatchingField(availMap, c);
                 if (availF != null) {
+                    // // ICU4J special case: skip hour field adjustment by default, 
+                    // // EXCEPT if the requested length is 2 and the pattern is 1, and it's an hour field.
+                    // if (c == 'h' || c == 'H' || c == 'k' || c == 'K') {
+                    //     if (reqF.length() == 2 && patField.length() == 1) {
+                    //          // Force expansion to 2 digits for JJ/CC etc if the pattern has 1.
+                    //          res.append(patField.charAt(0));
+                    //          res.append(patField.charAt(0));
+                    //          continue;
+                    //     }
+                    //     // Also, if the requested character is different from the pattern, 
+                    //     // we might need to adjust length based on the requested character.
+                    //     // For example J maps to H, and matches HH.
+                    //     if (reqF.charAt(0) != patField.charAt(0)) {
+                    //          for (int k = 0; k < reqF.length(); k++) res.append(patField.charAt(0));
+                    //          continue;
+                    //     }
+                    //     res.append(patField);
+                    //     continue;
+                    // }
                     // Only expand if categories match and numeric/text status is consistent.
                     if (getLengthCategory(patField) == getLengthCategory(availF)) {
                         if (isNumeric(reqF) == isNumeric(availF)) {
