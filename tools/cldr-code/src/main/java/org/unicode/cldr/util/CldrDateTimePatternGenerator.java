@@ -24,6 +24,7 @@ public class CldrDateTimePatternGenerator {
 
     private char defaultHourFormatChar = 'H';
     private String[] allowedHourFormats = {"H"};
+    private String decimal = "?";
     private final Map<String, String> availableFormats = new LinkedHashMap<>();
     private final Map<String, String> appendItems = new LinkedHashMap<>();
     private final Map<String, String> fieldNames = new LinkedHashMap<>();
@@ -91,6 +92,7 @@ public class CldrDateTimePatternGenerator {
      */
     private void init() {
         initHourFormat();
+        initDecimal();
         initStockPatterns();
 
         Set<String> allIds = new LinkedHashSet<>();
@@ -133,6 +135,18 @@ public class CldrDateTimePatternGenerator {
         if (pref != null) {
             defaultHourFormatChar = pref.preferred.toString().charAt(0);
             allowedHourFormats = pref.allowed.stream().map(Object::toString).toArray(String[]::new);
+        }
+    }
+
+    private void initDecimal() {
+        String ns = file.getStringValueWithBailey("//ldml/numbers/defaultNumberingSystem");
+        if (ns == null) {
+            ns = "latn";
+        }
+        String decimalPath = "//ldml/numbers/symbols[@numberSystem='" + ns + "']/decimal";
+        String decimalValue = file.getStringValueWithBailey(decimalPath);
+        if (decimalValue != null) {
+            this.decimal = decimalValue;
         }
     }
 
@@ -321,8 +335,23 @@ public class CldrDateTimePatternGenerator {
                 }
 
                 // This matches TR35 logic for j, J, and C skeleton field length handling.
-                int hourLen = 1 + (extraLen & 1);
-                int dayPeriodLen = (extraLen < 2) ? 1 : 3 + (extraLen >> 1);
+                int hourLen;
+                if (extraLen % 1 == 0) {
+                    hourLen = 1;
+                } else {
+                    hourLen = 2;
+                }
+                int dayPeriodLen;
+                if (extraLen < 2) {
+                    // j, jj, C, CC -> a, b, B (abbreviated)
+                    dayPeriodLen = 1;
+                } else if (extraLen < 4) {
+                    // jjj, jjjj, CCC, CCCC -> aaaa, bbbb, BBBB (wide)
+                    dayPeriodLen = 4;
+                } else {
+                    // jjjjj, jjjjjj, CCCCC, CCCCCC -> aaaaa, bbbbb, BBBBB (narrow)
+                    dayPeriodLen = 5;
+                }
 
                 String style;
                 switch (patChr) {
@@ -688,7 +717,6 @@ public class CldrDateTimePatternGenerator {
     private String getMatchingField(Map<Character, String> map, char fieldChar) {
         String match = map.get(fieldChar);
         if (match != null) return match;
-
         for (Map.Entry<Character, String> entry : map.entrySet()) {
             if (areFieldsRelated(fieldChar, entry.getKey())) {
                 return entry.getValue();
@@ -860,6 +888,16 @@ public class CldrDateTimePatternGenerator {
             while (i < pattern.length() && pattern.charAt(i) == c) i++;
             String patField = pattern.substring(start, i);
 
+            if (c == 's' && !availSkeleton.contains("S")) {
+                String reqS = getMatchingField(reqMap, 'S');
+                if (reqS != null && reqSkeleton.contains("S")) {
+                    res.append(patField);
+                    res.append(decimal);
+                    res.append(reqS);
+                    continue;
+                }
+            }
+
             String reqF = getMatchingField(reqMap, c);
             if (reqF != null) {
                 String availF = getMatchingField(availMap, c);
@@ -872,6 +910,11 @@ public class CldrDateTimePatternGenerator {
                             // Weekday in skeleton is E but it is EEE in patterns
                             if ((newChar == 'E' || newChar == 'c' || newChar == 'e') && kLen < 3) {
                                 kLen = 3;
+                            }
+                            // Timezone/offset should always use the requested field
+                            if (areFieldsRelated(newChar, 'z')) {
+                                newChar = reqF.charAt(0);
+                                kLen = reqF.length();
                             }
                             for (int k = 0; k < kLen; k++) res.append(newChar);
                             continue;
@@ -936,6 +979,7 @@ public class CldrDateTimePatternGenerator {
         icuGen.setDateTimeFormat(DateFormat.LONG, dateTimeFormatLong);
         icuGen.setDateTimeFormat(DateFormat.MEDIUM, dateTimeFormatMedium);
         icuGen.setDateTimeFormat(DateFormat.SHORT, dateTimeFormatShort);
+        icuGen.setDecimal(decimal);
 
         /**
          * We MUST use override=true here to ensure that all patterns defined in CLDR's
