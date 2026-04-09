@@ -27,7 +27,28 @@ import org.unicode.cldr.util.Factory;
         url = CLDRURLS.TOOLSURL)
 public class CldrDateTimePatternGeneratorCompare {
     private static final String[] SKELETONS = {
-        "y",
+        // --- Single field skeletons (all lengths) ---
+        "G", "GGGG", "GGGGG",
+        "y", "yy", "yyy", "yyyy", "yyyyy",
+        "U", "UUUU", "UUUUU",
+        "Q", "QQ", "QQQ", "QQQQ", "QQQQQ",
+        "M", "MM", "MMM", "MMMM", "MMMMM",
+        "d", "dd",
+        "E", "EEEE", "EEEEE", "EEEEEE",
+        "B", "BBBB", "BBBBB",
+        "h", "hh",
+        "H", "HH",
+        "K", "KK",
+        "k", "kk",
+        "j", "jj", "jjj", "jjjj", "jjjjj", "jjjjjj",
+        "J", "JJ",
+        "C", "CC", "CCC", "CCCC", "CCCCC", "CCCCCC",
+        "m", "mm",
+        "s", "ss",
+        "v", "vvvv",
+
+        // --- Multi-field skeletons ---
+        // Date
         "yM",
         "yMd",
         "yMEd",
@@ -37,142 +58,54 @@ public class CldrDateTimePatternGeneratorCompare {
         "yMMMM",
         "yMMMMd",
         "yMMMMEEEEd",
-        "M",
-        "Md",
-        "MEd",
-        "MMM",
-        "MMMd",
-        "MMMEd",
-        "MMMM",
-        "MMMMd",
-        "MMMMEEEEd",
-        "j",
-        "jm",
-        "jms",
+        "Gy",
+        "GyM",
+        "GyMd",
+        "GyMMM",
+        "GyMMMd",
+        "GyMMMEd",
+        "yQ",
+        "yQQQ",
+        "yQQQQ",
+
+        // Time
         "Hm",
         "Hms",
         "hm",
         "hms",
-        "Mdjm",
-        "MMMdjm",
-        "MMMMdjm",
-        "yMdjms",
-        "yMMMdjms",
-        "yMMMMdjms",
-
-        // New additions:
-        // Era + Year combinations
-        "Gy",
-        "GyM",
-        "GyMMM",
-        "GyMMMd",
-
-        // Different year types
-        "u",
-        "U",
-        "r",
-
-        // Quarters
-        "Q",
-        "yQ",
-        "yQQQ",
-        "yQQQQ",
-        "q",
-        "yq",
-        "yqqq",
-        "yqqqq",
-
-        // Stand-alone Month and Weekday
-        "L",
-        "LLLL",
-        "cccc",
-        "eeee",
-
-        // Week of Year and Week of Month
-        "Yw",
-        "Yww",
-        "YwE",
-        "W",
-        "MMMMW",
-
-        // Day of Year and Day of Week in Month
-        "D",
-        "yD",
-        "F",
-        "MF",
-
-        // Different hour cycles and input symbols
-        "h",
-        "hh",
-        "H",
-        "HH",
-        "K",
-        "KK",
-        "k",
-        "kk",
-        "jj",
-        "jjj",
-        "jjjj",
-        "jjjjj",
-        "jjjjjj",
-        "J",
-        "JJ",
-        "C",
-        "CC",
-        "CCC",
-        "CCCC",
-        "CCCCC",
-        "CCCCCC",
-
-        // Minutes and Seconds
-        "m",
-        "s",
-        "ss",
-        "S",
-        "SSS",
-        "msS",
-        "A",
-
-        // Zones
-        "z",
-        "zzzz",
-        "Z",
-        "ZZZZ",
-        "ZZZZZ",
-        "O",
-        "OOOO",
-        "v",
-        "vvvv",
-        "V",
-        "VV",
-        "VVV",
-        "VVVV",
-        "X",
-        "XXXX",
-        "x",
-        "xxxx",
-
-        // Zone combinations
-        "yMz",
-        "yMv",
-        "yMVVVV",
-        "yMXXXX",
-
-        // Unusual / non-availableFormats combinations
-        "GE",
-        "GQ",
-        "MdH",
-        "yMdHms",
-        "yMdHmsZ",
-        "EBhm",
+        "Km",
+        "Kms",
+        "km",
+        "kms",
+        "jm",
+        "jms",
+        "Jm",
+        "Jms",
+        "Cm",
+        "Cms",
         "hB",
-        "hb",
+        "hhB",
+        "Bhm",
+        "BBBBhm",
+        "BBBBBhm",
 
-        // Test field normalization/canonicalization
-        "dM",
-        "My",
-        "g",
-        "a",
+        // Date + Time
+        "yMdHm",
+        "yMdHms",
+        "yMMMdhm",
+        "yMMMdHms",
+        "yMMMMEEEEdhms",
+        "yMMMMEEEEdHms",
+        "yMdjm",
+        "yMMMdjm",
+        "yMMMMdjm",
+
+        // Date + Time + Zone
+        "yMv",
+        "yMMMMdv",
+        "yMMMMEEEEdvvvv",
+        "yMdHmsv",
+        "yMMMMdhmsvvvv"
     };
 
     private static final String[] CALENDARS = {
