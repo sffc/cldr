@@ -224,7 +224,15 @@ public class CldrDateTimePatternGeneratorCompare {
         for (String f : icuFields) if (!f.startsWith("G")) icuFieldSet.add(f.charAt(0));
 
         if (!cldrFieldSet.equals(icuFieldSet)) {
-            return "NO: Field set mismatch";
+            StringBuilder cldrOnly = new StringBuilder();
+            for (char ch : cldrFieldSet) {
+                if (!icuFieldSet.contains(ch)) cldrOnly.append(ch);
+            }
+            StringBuilder icuOnly = new StringBuilder();
+            for (char ch : icuFieldSet) {
+                if (!cldrFieldSet.contains(ch)) icuOnly.append(ch);
+            }
+            return "NO: Field set mismatch: " + cldrOnly + " -> " + icuOnly;
         }
 
         // 3. Check for Field Order mismatch
