@@ -670,7 +670,7 @@ public class CldrDateTimePatternGenerator {
      *
      * <p>Penalties: - Same field type and length = 0. - Same field type, different length = |req -
      * avail|. - Related field type (e.g. M vs L) = 16 + |req - avail|. - Numeric/Text mismatch
-     * (e.g. M vs MMM) = 100 + |req - avail|. - Missing field = 50. - Extra fields in available =
+     * (e.g. M vs MMM) = 100 + |req - avail|. - Missing field = 1000. - Extra fields in available =
      * rejected (10000).
      *
      * @param req the requested skeleton
@@ -695,7 +695,7 @@ public class CldrDateTimePatternGenerator {
             if (af != null) {
                 dist += getSingleFieldDistance(af, rf);
             } else {
-                dist += 50; // Missing field in available.
+                dist += 1000; // Missing field in available.
             }
         }
         return dist;
@@ -737,7 +737,6 @@ public class CldrDateTimePatternGenerator {
         boolean isNumeric = isNumeric(availField);
         if (isNumeric != isNumeric(requestedField)) {
             diff += 100;
-            return diff;
         }
         if (isNumeric) {
             diff += Math.abs(availField.length() - requestedField.length());
