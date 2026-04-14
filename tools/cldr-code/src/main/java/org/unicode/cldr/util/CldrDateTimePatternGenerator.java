@@ -470,8 +470,8 @@ public class CldrDateTimePatternGenerator {
                 bestMatchSkeleton = availSkeleton;
             }
         }
-        // Distance of 1000 or more means no reasonable match was found (e.g. extra fields).
-        return bestDistance < 1000 ? bestMatchSkeleton : null;
+        // Distance of 10000 or more means no reasonable match was found (e.g. extra fields).
+        return bestDistance < 10000 ? bestMatchSkeleton : null;
     }
 
     /** Appends fields from the requested skeleton that are missing in the matched skeleton. */
