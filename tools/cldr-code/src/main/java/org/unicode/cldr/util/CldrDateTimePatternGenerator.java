@@ -915,17 +915,16 @@ public class CldrDateTimePatternGenerator {
                     boolean availFieldIsNumeric = isNumeric(availF);
 
                     boolean shouldExpand = false;
-                    if (patFieldIsNumeric && availFieldIsNumeric && reqFieldIsNumeric) {
+                    if (patFieldIsNumeric == availFieldIsNumeric
+                            && reqFieldIsNumeric == availFieldIsNumeric) {
                         // Numeric adjustment: only adjust if the found skeleton's length
                         // differs from the requested skeleton's length.
-                        shouldExpand = (availF.length() != reqF.length());
-                    } else if (!patFieldIsNumeric && !availFieldIsNumeric && !reqFieldIsNumeric) {
+                        shouldExpand =
+                                (availF.length() != reqF.length()
+                                        || availF.charAt(0) != reqF.charAt(0));
+                    } else if (getLengthCategory(patField) == getLengthCategory(availF)) {
                         // Text/other adjustment: only adjust if in the same category.
-                        if (getLengthCategory(patField) == getLengthCategory(availF)) {
-                            shouldExpand =
-                                    (patField.charAt(0) != reqF.charAt(0)
-                                            || availF.length() != reqF.length());
-                        }
+                        shouldExpand = (patFieldIsNumeric == reqFieldIsNumeric);
                     }
 
                     if (shouldExpand) {
@@ -935,10 +934,9 @@ public class CldrDateTimePatternGenerator {
                         if ((newChar == 'E' || newChar == 'c' || newChar == 'e') && kLen < 3) {
                             kLen = 3;
                         }
-                        // Timezone/offset should always use the requested field
-                        if (areFieldsRelated(newChar, 'z')) {
+                        // If characters differ but are related, substitute the requested character
+                        if (newChar != reqF.charAt(0) && areFieldsRelated(newChar, reqF.charAt(0))) {
                             newChar = reqF.charAt(0);
-                            kLen = reqF.length();
                         }
                         for (int k = 0; k < kLen; k++) res.append(newChar);
                         continue;
