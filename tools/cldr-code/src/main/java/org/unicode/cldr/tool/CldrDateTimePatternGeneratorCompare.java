@@ -46,8 +46,9 @@ public class CldrDateTimePatternGeneratorCompare {
         "yMd", "yMdd",
 
         // Day of week (E): 1..6
-        "E", "EE", "EEE", "EEEE", "EEEEE", "EEEEEE",
-        "yMdE", "yMdEE", "yMdEEE", "yMdEEEE", "yMdEEEEE", "yMdEEEEEE",
+        // Skip EE and EEE since they canonicalize to E
+        "E", "EEEE", "EEEEE", "EEEEEE",
+        "yMdE", "yMdEEEE", "yMdEEEEE", "yMdEEEEEE",
 
         // Hour 1-12 (h): 1..2
         "h", "hh",
