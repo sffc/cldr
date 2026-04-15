@@ -34,8 +34,8 @@ public class CldrDateTimePatternGeneratorCompare {
         "GyMd", "GGyMd", "GGGyMd", "GGGGyMd", "GGGGGyMd",
 
         // Year (y): 1..4
-        "y", "yy", "yyy", "yyyy",
-        "yMd", "yyMd", "yyyMd", "yyyyMd",
+        "y", "yy", "yyyy",
+        "yMd", "yyMd", "yyyyMd",
 
         // Month (M): 1..5
         "M", "MM", "MMM", "MMMM", "MMMMM",
