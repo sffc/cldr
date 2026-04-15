@@ -212,9 +212,19 @@ public class CldrDateTimePatternGenerator {
                             + "\"]";
             String value = file.getStringValueWithBailey(path);
             if (value != null) {
-                availableFormats.put(canonicalizeSkeleton(id), value);
+                availableFormats.put(canonicalizeSkeleton(maybeAddDayPeriod(id)), value);
             }
         }
+    }
+
+    private static CharSequence maybeAddDayPeriod(CharSequence skeleton) {
+        // TR35: If skeletons for 12-hour time do not contain a day period, the skeleton will be treated as implicitly containing 'a'.
+        if (skeleton.chars().anyMatch(c -> c == 'h') && !skeleton.chars().anyMatch(c -> c == 'a' || c == 'b' || c == 'B')) {
+            StringBuilder builder = new StringBuilder(skeleton);
+            builder.append('a');
+            return builder;
+        }
+        return skeleton;
     }
 
     /** Resolves the appendItem patterns for our specific calendar. */
@@ -324,15 +334,14 @@ public class CldrDateTimePatternGenerator {
     }
 
     private String getBestPatternInternal(String skeleton, List<String> log) {
-        String origSkeleton = skeleton;
         StringBuilder skeletonCopy = new StringBuilder();
-        for (int patPos = 0; patPos < skeleton.length(); patPos++) {
-            char patChr = skeleton.charAt(patPos);
-            if (patChr == 'j' || patChr == 'C' || patChr == 'J') {
+        for (int i = 0; i < skeleton.length(); i++) {
+            char reqChar = skeleton.charAt(i);
+            if (reqChar == 'j' || reqChar == 'C' || reqChar == 'J') {
                 int extraLen = 0;
-                while (patPos + 1 < skeleton.length() && skeleton.charAt(patPos + 1) == patChr) {
+                while (i + 1 < skeleton.length() && skeleton.charAt(i + 1) == reqChar) {
                     extraLen++;
-                    patPos++;
+                    i++;
                 }
 
                 // This matches TR35 logic for j, J, and C skeleton field length handling.
@@ -344,65 +353,77 @@ public class CldrDateTimePatternGenerator {
                 }
                 int dayPeriodLen;
                 if (extraLen < 2) {
-                    // j, jj, C, CC -> a, b, B (abbreviated)
+                    // j, jj, C, CC → a, b, B (abbreviated)
                     dayPeriodLen = 1;
                 } else if (extraLen < 4) {
-                    // jjj, jjjj, CCC, CCCC -> aaaa, bbbb, BBBB (wide)
+                    // jjj, jjjj, CCC, CCCC → aaaa, bbbb, BBBB (wide)
                     dayPeriodLen = 4;
                 } else {
-                    // jjjjj, jjjjjj, CCCCC, CCCCCC -> aaaaa, bbbbb, BBBBB (narrow)
+                    // jjjjj, jjjjjj, CCCCC, CCCCCC → aaaaa, bbbbb, BBBBB (narrow)
                     dayPeriodLen = 5;
                 }
 
-                String style;
-                switch (patChr) {
+                char hourChar = 'H';
+                char dayPeriodChar = 0;
+                switch (reqChar) {
                     case 'J':
                         // Find the H pattern to avoid the day period
-                        style = "H";
-                        dayPeriodLen = 0;
+                        // (no-op)
                         break;
                     case 'j':
                         switch (defaultHourFormatChar) {
                             case 'h':
                             case 'K':
-                                style = "ha";
+                                hourChar = 'h';
+                                dayPeriodChar = 'a';
                                 break;
                             default:
-                                style = "H";
+                                // (no-op)
                                 break;
                         }
                         break;
-                    default: // patChr == 'C'
-                        style = allowedHourFormats[0];
-                        break;
+                    case 'C':
+                        switch (allowedHourFormats[0]) {
+                            case "H":
+                                // (no-op)
+                                break;
+                            case "h":
+                                hourChar = 'h';
+                                dayPeriodChar = 'a';
+                                break;
+                            case "hb":
+                                hourChar = 'h';
+                                dayPeriodChar = 'b';
+                                break;
+                            case "hB":
+                                hourChar = 'h';
+                                dayPeriodChar = 'B';
+                                break;
+                            default:
+                                assert false;
+                        }
+                    default:
+                        assert false;
                 }
 
-                for (int i = 0; i < style.length(); i++) {
-                    char c = style.charAt(i);
-                    int len =
-                            (c == 'h' || c == 'H' || c == 'k' || c == 'K') ? hourLen : dayPeriodLen;
-                    for (int k = 0; k < len; k++) {
-                        skeletonCopy.append(c);
-                    }
+                for (int x = 0; x < hourLen; x++) skeletonCopy.append(hourChar);
+                if (dayPeriodChar != 0) {
+                    for (int x = 0; x < dayPeriodLen; x++) skeletonCopy.append(dayPeriodChar);
                 }
             } else {
-                skeletonCopy.append(patChr);
+                skeletonCopy.append(reqChar);
             }
         }
-        skeleton = skeletonCopy.toString();
+        
+        String canonicalSkeleton = canonicalizeSkeleton(maybeAddDayPeriod(skeletonCopy));
 
-        if (log != null && !origSkeleton.equals(skeleton)) {
-            log.add("Mapped metacharacters: " + origSkeleton + " -> " + skeleton);
-        }
-
-        String canonicalSkeleton = canonicalizeSkeleton(skeleton);
         if (log != null && !skeleton.equals(canonicalSkeleton)) {
-            log.add("Canonicalized skeleton: " + canonicalSkeleton);
+            log.add("Canonical skeleton: " + skeleton + " → " + canonicalSkeleton);
         }
 
         if (availableFormats.containsKey(canonicalSkeleton)) {
             String result = availableFormats.get(canonicalSkeleton);
-            if (log != null) log.add("Found exact match in availableFormats: " + result);
+            if (log != null) log.add("Exact match: " + result);
             return result;
         }
 
@@ -416,15 +437,15 @@ public class CldrDateTimePatternGenerator {
         String bestMatchSkeleton = findBestMatch(canonicalSkeleton);
 
         if (bestMatchSkeleton != null) {
-            if (log != null) log.add("Closest skeleton match: " + bestMatchSkeleton);
-            String pattern =
+            String origPattern = availableFormats.get(bestMatchSkeleton);
+            String expandedPattern =
                     expandPattern(
                             canonicalSkeleton,
                             bestMatchSkeleton,
-                            availableFormats.get(bestMatchSkeleton));
-            if (log != null) log.add("Expanded pattern to requested lengths: " + pattern);
+                            origPattern);
+            if (log != null) log.add("Closest match: " + bestMatchSkeleton + " → " + origPattern + " → " + expandedPattern);
 
-            return appendMissingFields(pattern, canonicalSkeleton, bestMatchSkeleton, log);
+            return appendMissingFields(expandedPattern, canonicalSkeleton, bestMatchSkeleton, log);
         }
 
         return getFallbackPattern(canonicalSkeleton, log);
@@ -463,7 +484,7 @@ public class CldrDateTimePatternGenerator {
         String dateTimePattern = getDateTimePattern(dateSkeleton);
         String combined = dateTimePattern.replace("{1}", datePattern).replace("{0}", timePattern);
         if (log != null)
-            log.add("Combined components using '" + dateTimePattern + "' -> " + combined);
+            log.add("Combined components using '" + dateTimePattern + "' → " + combined);
         return combined;
     }
 
@@ -501,7 +522,7 @@ public class CldrDateTimePatternGenerator {
         for (String rf : reqFields) {
             if (!availChars.contains(rf.charAt(0))) {
                 pattern = appendField(pattern, rf);
-                if (log != null) log.add("Appended missing field '" + rf + "' -> " + pattern);
+                if (log != null) log.add("Appended missing field '" + rf + "' → " + pattern);
             }
         }
         return pattern;
@@ -519,10 +540,10 @@ public class CldrDateTimePatternGenerator {
         for (String f : fields) {
             if (res.isEmpty()) {
                 res = getBasicPattern(f);
-                if (log != null) log.add("Started fallback with '" + f + "' -> " + res);
+                if (log != null) log.add("Started fallback with '" + f + "' → " + res);
             } else {
                 res = appendField(res, f);
-                if (log != null) log.add("Appended fallback field '" + f + "' -> " + res);
+                if (log != null) log.add("Appended fallback field '" + f + "' → " + res);
             }
         }
         return res;
@@ -711,7 +732,7 @@ public class CldrDateTimePatternGenerator {
     }
 
     /**
-     * Converts a skeleton string into a map from field character to field string (e.g. 'y' ->
+     * Converts a skeleton string into a map from field character to field string (e.g. 'y' →
      * "yyyy").
      */
     private Map<Character, String> getSkeletonMap(String skeleton) {
@@ -789,7 +810,7 @@ public class CldrDateTimePatternGenerator {
     }
 
     /**
-     * Splits a skeleton into its constituent field strings (e.g., "yMMMd" -> ["y", "MMM", "d"]).
+     * Splits a skeleton into its constituent field strings (e.g., "yMMMd" → ["y", "MMM", "d"]).
      *
      * @param skel the skeleton to split
      * @return a list of field strings
@@ -970,11 +991,12 @@ public class CldrDateTimePatternGenerator {
      * @param skel the skeleton to normalize
      * @return the canonicalized skeleton
      */
-    private String canonicalizeSkeleton(String skel) {
+    private String canonicalizeSkeleton(CharSequence skel) {
         int[] counts = new int[128];
         for (int i = 0; i < skel.length(); i++) {
             char c = skel.charAt(i);
-            if (c < 128) counts[c]++;
+            assert c < 128;
+            counts[c]++;
         }
         StringBuilder res = new StringBuilder();
         for (int i = 0; i < CANONICAL_ORDER.length(); i++) {
@@ -1015,7 +1037,7 @@ public class CldrDateTimePatternGenerator {
          *
          * <p>Furthermore, we MUST use addPatternWithSkeleton instead of addPattern because some
          * CLDR patterns map a specific skeleton to a pattern that doesn't have the exact same field
-         * widths (e.g., cs: yMMMd -> d. M. y). If we only pass the pattern, ICU4J derives the
+         * widths (e.g., cs: yMMMd → d. M. y). If we only pass the pattern, ICU4J derives the
          * skeleton (yMd) and forgets the original intent (yMMMd), leading to incorrect fallback
          * adjustments during getBestPattern.
          */
