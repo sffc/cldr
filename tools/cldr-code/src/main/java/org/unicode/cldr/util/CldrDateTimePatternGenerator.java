@@ -892,90 +892,76 @@ public class CldrDateTimePatternGenerator {
                 continue;
             }
 
+            // The rest of this function calculates the desired output char and length.
+            // We default to the field in the pattern and override only in specific cases.
+            char outChar = c;
             int start = i;
             while (i < pattern.length() && pattern.charAt(i) == c) i++;
-            String patField = pattern.substring(start, i);
+            int outLen = i - start;
+            String patF = pattern.substring(start, i);
 
+            // Special handling for seconds and fractional seconds
             if (c == 's' && !availSkeleton.contains("S")) {
                 String reqS = getMatchingField(reqMap, 'S');
                 if (reqS != null && reqSkeleton.contains("S")) {
-                    res.append(patField);
+                    res.append(patF);
                     res.append(decimal);
                     res.append(reqS);
                     continue;
                 }
             }
 
+            // reqF is the field from the requested skeleton.
+            // availF is the field from the available skeleton.
+            //
+            // For example:
+            // - Requested skeleton: "yMMdE"
+            // - Available skeleton (closest match): "yMdE"
+            // - Pattern: "EEE, M/d/y"
             String reqF = getMatchingField(reqMap, c);
-            if (reqF != null) {
-                String availF = getMatchingField(availMap, c);
-                if (availF != null) {
-                    boolean patFieldIsNumeric = isNumeric(patField);
-                    boolean reqFieldIsNumeric = isNumeric(reqF);
-                    boolean availFieldIsNumeric = isNumeric(availF);
+            String availF = getMatchingField(availMap, c);
+            reqF = skeletonFieldToPatternField(reqF);
+            availF = skeletonFieldToPatternField(availF);
 
-                    boolean shouldExpand = false;
-                    if (patFieldIsNumeric == availFieldIsNumeric
-                            && reqFieldIsNumeric == availFieldIsNumeric) {
-                        // Numeric adjustment: only adjust if the found skeleton's length
-                        // differs from the requested skeleton's length.
-                        shouldExpand = (availF.length() != reqF.length());
-                    } else if (getLengthCategory(patField) == getLengthCategory(availF)) {
-                        // Text/other adjustment: only adjust if in the same category.
-                        shouldExpand = (patFieldIsNumeric == reqFieldIsNumeric);
+            // Check if we need to change the length or character of the field.
+            // This only happens if the corresponding field is in the skeleton!
+            if (availF != null && reqF != null) {
+                char reqChar = reqF.charAt(0);
+                if (availF.charAt(0) != reqChar) {
+                    // The available skeleton has a different field character than the requested skeleton.
+                    // Adjust the field character if it is in an appropriate category.
+                    if (reqChar != 'j' && reqChar != 'J' && reqChar != 'C') {
+                        outChar = reqChar;
                     }
-
-                    if (shouldExpand || (availF.charAt(0) != reqF.charAt(0) && areFieldsRelated(availF.charAt(0), reqF.charAt(0)))) {
-                        char newChar = patField.charAt(0);
-                        int type = -1;
-                        try {
-                            type =
-                                    new com.ibm.icu.text.DateTimePatternGenerator.VariableField(
-                                                    patField)
-                                            .getType();
-                        } catch (Exception e) {
-                        }
-
-                        char reqFieldChar = reqF.charAt(0);
-                        // ICU4J logic for choosing between requested character and pattern character
-                        boolean useRequestedChar =
-                                (type != DateTimePatternGenerator.HOUR
-                                        && type != DateTimePatternGenerator.MONTH
-                                        && type != DateTimePatternGenerator.WEEKDAY
-                                        && (type != DateTimePatternGenerator.YEAR
-                                                || reqFieldChar == 'Y'));
-
-                        if (useRequestedChar) {
-                            newChar = reqFieldChar;
-                        }
-
-                        int kLen = reqF.length();
-                        // Weekday in skeleton is E but it is EEE in patterns
-                        if ((newChar == 'E' || newChar == 'c' || newChar == 'e') && kLen < 3) {
-                            kLen = 3;
-                        }
-                        // ICU4J: If we want a numeric day-of-week field, we have to use 'e'
-                        if (newChar == 'E' && kLen < 3) {
-                            newChar = 'e';
-                        }
-
-                        for (int k = 0; k < kLen; k++) res.append(newChar);
-                        continue;
+                }
+                int reqLen = reqF.length();
+                if (availF.length() != reqLen) {
+                    // The available skeleton has a different field length than the requested skeleton.
+                    // Adjust the field length so long as we don't cross between numeric and alphabetic.
+                    if (isNumeric(patF) == isNumeric(reqF) && isNumeric(patF) == isNumeric(availF)) {
+                        outLen = reqLen;
                     }
                 }
             }
-            res.append(patField);
+
+            // Print out the resolved character and length.
+            for (int k = 0; k < outLen; k++) {
+                res.append(outChar);
+            }
         }
         return res.toString();
     }
 
-    private static int getLengthCategory(String field) {
-        if (isNumeric(field)) {
-            return field.length();
+    /**
+     * Converts a skeleton field like "E" to a pattern field like "EEE".
+     *
+     * For most fields, this is a no-op.
+     */
+    private static String skeletonFieldToPatternField(String skeletonField) {
+        if ("E".equals(skeletonField)) {
+            return "EEE";
         }
-        int len = field.length();
-        if (len <= 3) return 3;
-        return len;
+        return skeletonField;
     }
 
     /**
