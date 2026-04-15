@@ -919,25 +919,46 @@ public class CldrDateTimePatternGenerator {
                             && reqFieldIsNumeric == availFieldIsNumeric) {
                         // Numeric adjustment: only adjust if the found skeleton's length
                         // differs from the requested skeleton's length.
-                        shouldExpand =
-                                (availF.length() != reqF.length()
-                                        || availF.charAt(0) != reqF.charAt(0));
+                        shouldExpand = (availF.length() != reqF.length());
                     } else if (getLengthCategory(patField) == getLengthCategory(availF)) {
                         // Text/other adjustment: only adjust if in the same category.
                         shouldExpand = (patFieldIsNumeric == reqFieldIsNumeric);
                     }
 
-                    if (shouldExpand) {
+                    if (shouldExpand || (availF.charAt(0) != reqF.charAt(0) && areFieldsRelated(availF.charAt(0), reqF.charAt(0)))) {
                         char newChar = patField.charAt(0);
+                        int type = -1;
+                        try {
+                            type =
+                                    new com.ibm.icu.text.DateTimePatternGenerator.VariableField(
+                                                    patField)
+                                            .getType();
+                        } catch (Exception e) {
+                        }
+
+                        char reqFieldChar = reqF.charAt(0);
+                        // ICU4J logic for choosing between requested character and pattern character
+                        boolean useRequestedChar =
+                                (type != DateTimePatternGenerator.HOUR
+                                        && type != DateTimePatternGenerator.MONTH
+                                        && type != DateTimePatternGenerator.WEEKDAY
+                                        && (type != DateTimePatternGenerator.YEAR
+                                                || reqFieldChar == 'Y'));
+
+                        if (useRequestedChar) {
+                            newChar = reqFieldChar;
+                        }
+
                         int kLen = reqF.length();
                         // Weekday in skeleton is E but it is EEE in patterns
                         if ((newChar == 'E' || newChar == 'c' || newChar == 'e') && kLen < 3) {
                             kLen = 3;
                         }
-                        // If characters differ but are related, substitute the requested character
-                        if (newChar != reqF.charAt(0) && areFieldsRelated(newChar, reqF.charAt(0))) {
-                            newChar = reqF.charAt(0);
+                        // ICU4J: If we want a numeric day-of-week field, we have to use 'e'
+                        if (newChar == 'E' && kLen < 3) {
+                            newChar = 'e';
                         }
+
                         for (int k = 0; k < kLen; k++) res.append(newChar);
                         continue;
                     }
