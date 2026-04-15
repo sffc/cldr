@@ -1,6 +1,5 @@
 package org.unicode.cldr.tool;
 
-import com.ibm.icu.text.DateTimePatternGenerator;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -8,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+
 import org.unicode.cldr.draft.FileUtilities;
 import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
@@ -16,6 +16,8 @@ import org.unicode.cldr.util.CLDRTool;
 import org.unicode.cldr.util.CLDRURLS;
 import org.unicode.cldr.util.CldrDateTimePatternGenerator;
 import org.unicode.cldr.util.Factory;
+
+import com.ibm.icu.text.DateTimePatternGenerator;
 
 /**
  * Compares the behavior of CldrDateTimePatternGenerator against ICU4J's DateTimePatternGenerator.
@@ -27,85 +29,66 @@ import org.unicode.cldr.util.Factory;
         url = CLDRURLS.TOOLSURL)
 public class CldrDateTimePatternGeneratorCompare {
     private static final String[] SKELETONS = {
-        // --- Single field skeletons (all lengths) ---
-        "G", "GGGG", "GGGGG",
-        "y", "yy", "yyy", "yyyy", "yyyyy",
-        "U", "UUUU", "UUUUU",
-        "Q", "QQ", "QQQ", "QQQQ", "QQQQQ",
+        // Era (G): 1..5
+        "G", "GG", "GGG", "GGGG", "GGGGG",
+        "GyMd", "GGyMd", "GGGyMd", "GGGGyMd", "GGGGGyMd",
+
+        // Year (y): 1..4
+        "y", "yy", "yyy", "yyyy",
+        "yMd", "yyMd", "yyyMd", "yyyyMd",
+
+        // Month (M): 1..5
         "M", "MM", "MMM", "MMMM", "MMMMM",
+        "yM", "yMM", "yMMM", "yMMMM", "yMMMMM",
+
+        // Day (d): 1..2
         "d", "dd",
-        "E", "EEEE", "EEEEE", "EEEEEE",
-        "B", "BBBB", "BBBBB",
+        "yMd", "yMdd",
+
+        // Day of week (E): 1..6
+        "E", "EE", "EEE", "EEEE", "EEEEE", "EEEEEE",
+        "yMdE", "yMdEE", "yMdEEE", "yMdEEEE", "yMdEEEEE", "yMdEEEEEE",
+
+        // Hour 1-12 (h): 1..2
         "h", "hh",
+        "hm", "hhm",
+
+        // Hour 0-23 (H): 1..2
         "H", "HH",
-        "K", "KK",
-        "k", "kk",
+        "Hm", "HHm",
+
+        // Hour preferred (j): 1..6
         "j", "jj", "jjj", "jjjj", "jjjjj", "jjjjjj",
-        "J", "JJ",
+        "jm", "jjm", "jjjm", "jjjjm", "jjjjjm", "jjjjjjm",
+
+        // Hour preferred, no am/pm (J): 1..6
+        "J", "JJ", "JJJ", "JJJJ", "JJJJJ", "JJJJJJ",
+        "Jm", "JJm", "JJJm", "JJJJm", "JJJJJm", "JJJJJJm",
+
+        // Hour preferred, context-dependent (C): 1..6
         "C", "CC", "CCC", "CCCC", "CCCCC", "CCCCCC",
+        "Cm", "CCm", "CCCm", "CCCCm", "CCCCCm", "CCCCCCm",
+
+        // Minute (m): 1..2
         "m", "mm",
+        "hm", "hmm",
+
+        // Second (s): 1..2
         "s", "ss",
+        "hms", "hmss",
+
+        // Timezone (z): 1..5
+        "z", "zz", "zzz", "zzzz", "zzzzz",
+        "hmsz", "hmszz", "hmszzz", "hmszzzz", "hmszzzzz",
+
+        // --- Other fields not explicitly mentioned but previously included ---
+        "U", "UUUU",
+        "Q", "QQ", "QQQ", "QQQQ", "QQQQQ",
+        "yQ", "yQQQ", "yQQQQ",
+        "B", "BBBB", "BBBBB",
+        "Bh", "Bhh", "Bhm", "BBBBhm", "BBBBBhm",
         "v", "vvvv",
-
-        // --- Multi-field skeletons ---
-        // Date
-        "yM",
-        "yMd",
-        "yMEd",
-        "yMMM",
-        "yMMMd",
-        "yMMMEd",
-        "yMMMM",
-        "yMMMMd",
-        "yMMMMEEEEd",
-        "Gy",
-        "GyM",
-        "GyMd",
-        "GyMMM",
-        "GyMMMd",
-        "GyMMMEd",
-        "yQ",
-        "yQQQ",
-        "yQQQQ",
-
-        // Time
-        "Hm",
-        "Hms",
-        "hm",
-        "hms",
-        "Km",
-        "Kms",
-        "km",
-        "kms",
-        "jm",
-        "jms",
-        "Jm",
-        "Jms",
-        "Cm",
-        "Cms",
-        "hB",
-        "hhB",
-        "Bhm",
-        "BBBBhm",
-        "BBBBBhm",
-
-        // Date + Time
-        "yMdHm",
-        "yMdHms",
-        "yMMMdhm",
-        "yMMMdHms",
-        "yMMMMEEEEdhms",
-        "yMMMMEEEEdHms",
-        "yMdjm",
-        "yMMMdjm",
-        "yMMMMdjm",
-
-        // Date + Time + Zone
-        "yMv",
-        "yMMMMdv",
-        "yMMMMEEEEdvvvv",
-        "yMdHmsv",
-        "yMMMMdhmsvvvv"
+        "yMv", "yMMMMdv", "yMMMMEEEEdvvvv", "yMdHmsv", "yMMMMdhmsvvvv"
     };
 
     private static final String[] CALENDARS = {
