@@ -146,7 +146,7 @@ public class DateTimeFormats {
     public static final String TIME_FIELDS = "aBhHkKmmsSAzZOvVXx";
 
     /** Characters that are always numeric. */
-    public static final String ALWAYS_NUMERIC_FIELDS = "yYruUwWdDFghHKkmsSA";
+    public static final String ALWAYS_NUMERIC_FIELDS = "yYruwWdDFghHKkmsSA";
 
     /** Characters that are numeric if length is 1 or 2, and text otherwise. */
     public static final String NUMERIC_OR_TEXT_FIELDS = "MLQqec";

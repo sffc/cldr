@@ -910,23 +910,35 @@ public class CldrDateTimePatternGenerator {
             if (reqF != null) {
                 String availF = getMatchingField(availMap, c);
                 if (availF != null) {
-                    // Only expand if categories match and numeric/text status is consistent.
-                    if (getLengthCategory(patField) == getLengthCategory(availF)) {
-                        if (isNumeric(reqF) == isNumeric(availF)) {
-                            char newChar = patField.charAt(0);
-                            int kLen = reqF.length();
-                            // Weekday in skeleton is E but it is EEE in patterns
-                            if ((newChar == 'E' || newChar == 'c' || newChar == 'e') && kLen < 3) {
-                                kLen = 3;
-                            }
-                            // Timezone/offset should always use the requested field
-                            if (areFieldsRelated(newChar, 'z')) {
-                                newChar = reqF.charAt(0);
-                                kLen = reqF.length();
-                            }
-                            for (int k = 0; k < kLen; k++) res.append(newChar);
-                            continue;
+                    boolean patFieldIsNumeric = isNumeric(patField);
+                    boolean reqFieldIsNumeric = isNumeric(reqF);
+                    boolean availFieldIsNumeric = isNumeric(availF);
+
+                    boolean shouldExpand = false;
+                    if (patFieldIsNumeric == availFieldIsNumeric
+                            && reqFieldIsNumeric == availFieldIsNumeric) {
+                        // Numeric adjustment: only adjust if the found skeleton's length
+                        // differs from the requested skeleton's length.
+                        shouldExpand = (availF.length() != reqF.length());
+                    } else if (getLengthCategory(patField) == getLengthCategory(availF)) {
+                        // Text/other adjustment: only adjust if in the same category.
+                        shouldExpand = (patFieldIsNumeric == reqFieldIsNumeric);
+                    }
+
+                    if (shouldExpand) {
+                        char newChar = patField.charAt(0);
+                        int kLen = reqF.length();
+                        // Weekday in skeleton is E but it is EEE in patterns
+                        if ((newChar == 'E' || newChar == 'c' || newChar == 'e') && kLen < 3) {
+                            kLen = 3;
                         }
+                        // Timezone/offset should always use the requested field
+                        if (areFieldsRelated(newChar, 'z')) {
+                            newChar = reqF.charAt(0);
+                            kLen = reqF.length();
+                        }
+                        for (int k = 0; k < kLen; k++) res.append(newChar);
+                        continue;
                     }
                 }
             }
