@@ -915,14 +915,17 @@ public class CldrDateTimePatternGenerator {
                     boolean availFieldIsNumeric = isNumeric(availF);
 
                     boolean shouldExpand = false;
-                    if (patFieldIsNumeric == availFieldIsNumeric
-                            && reqFieldIsNumeric == availFieldIsNumeric) {
+                    if (patFieldIsNumeric && availFieldIsNumeric && reqFieldIsNumeric) {
                         // Numeric adjustment: only adjust if the found skeleton's length
                         // differs from the requested skeleton's length.
                         shouldExpand = (availF.length() != reqF.length());
-                    } else if (getLengthCategory(patField) == getLengthCategory(availF)) {
+                    } else if (!patFieldIsNumeric && !availFieldIsNumeric && !reqFieldIsNumeric) {
                         // Text/other adjustment: only adjust if in the same category.
-                        shouldExpand = (patFieldIsNumeric == reqFieldIsNumeric);
+                        if (getLengthCategory(patField) == getLengthCategory(availF)) {
+                            shouldExpand =
+                                    (patField.charAt(0) != reqF.charAt(0)
+                                            || availF.length() != reqF.length());
+                        }
                     }
 
                     if (shouldExpand) {
