@@ -1,7 +1,5 @@
 package org.unicode.cldr.util;
 
-import com.ibm.icu.text.DateFormat;
-import com.ibm.icu.text.DateTimePatternGenerator;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,6 +8,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.ibm.icu.text.DateFormat;
+import com.ibm.icu.text.DateTimePatternGenerator;
 
 /**
  * A generator that produces the best localized date/time pattern for a given skeleton.
@@ -361,7 +362,15 @@ public class CldrDateTimePatternGenerator {
                         dayPeriodLen = 0;
                         break;
                     case 'j':
-                        style = String.valueOf(defaultHourFormatChar);
+                        switch (defaultHourFormatChar) {
+                            case 'h':
+                            case 'K':
+                                style = "ha";
+                                break;
+                            default:
+                                style = "H";
+                                break;
+                        }
                         break;
                     default: // patChr == 'C'
                         style = allowedHourFormats[0];
