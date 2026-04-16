@@ -979,7 +979,7 @@ public class CldrDateTimePatternGenerator {
                     // The available skeleton has a different field character than the requested
                     // skeleton.
                     // Adjust the field character if it is in an appropriate category.
-                    if (reqChar != 'j' && reqChar != 'J' && reqChar != 'C') {
+                    if (reqChar != 'j' && reqChar != 'J' && reqChar != 'C' && reqChar != 'U') {
                         outChar = reqChar;
                     }
                 }
