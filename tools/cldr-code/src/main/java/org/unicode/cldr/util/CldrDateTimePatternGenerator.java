@@ -1,5 +1,7 @@
 package org.unicode.cldr.util;
 
+import com.ibm.icu.text.DateFormat;
+import com.ibm.icu.text.DateTimePatternGenerator;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,9 +10,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.ibm.icu.text.DateFormat;
-import com.ibm.icu.text.DateTimePatternGenerator;
 
 /**
  * A generator that produces the best localized date/time pattern for a given skeleton.
@@ -218,8 +217,10 @@ public class CldrDateTimePatternGenerator {
     }
 
     private static CharSequence maybeAddDayPeriod(CharSequence skeleton) {
-        // TR35: If skeletons for 12-hour time do not contain a day period, the skeleton will be treated as implicitly containing 'a'.
-        if (skeleton.chars().anyMatch(c -> c == 'h') && !skeleton.chars().anyMatch(c -> c == 'a' || c == 'b' || c == 'B')) {
+        // TR35: If skeletons for 12-hour time do not contain a day period, the skeleton will be
+        // treated as implicitly containing 'a'.
+        if (skeleton.chars().anyMatch(c -> c == 'h')
+                && !skeleton.chars().anyMatch(c -> c == 'a' || c == 'b' || c == 'B')) {
             StringBuilder builder = new StringBuilder(skeleton);
             builder.append('a');
             return builder;
@@ -414,7 +415,7 @@ public class CldrDateTimePatternGenerator {
                 skeletonCopy.append(reqChar);
             }
         }
-        
+
         String canonicalSkeleton = canonicalizeSkeleton(maybeAddDayPeriod(skeletonCopy));
 
         if (log != null && !skeleton.equals(canonicalSkeleton)) {
@@ -439,11 +440,15 @@ public class CldrDateTimePatternGenerator {
         if (bestMatchSkeleton != null) {
             String origPattern = availableFormats.get(bestMatchSkeleton);
             String expandedPattern =
-                    expandPattern(
-                            canonicalSkeleton,
-                            bestMatchSkeleton,
-                            origPattern);
-            if (log != null) log.add("Closest match: " + bestMatchSkeleton + " → " + origPattern + " → " + expandedPattern);
+                    expandPattern(canonicalSkeleton, bestMatchSkeleton, origPattern);
+            if (log != null)
+                log.add(
+                        "Closest match: "
+                                + bestMatchSkeleton
+                                + " → "
+                                + origPattern
+                                + " → "
+                                + expandedPattern);
 
             return appendMissingFields(expandedPattern, canonicalSkeleton, bestMatchSkeleton, log);
         }
@@ -949,7 +954,8 @@ public class CldrDateTimePatternGenerator {
             if (availF != null && reqF != null) {
                 char reqChar = reqF.charAt(0);
                 if (availF.charAt(0) != reqChar) {
-                    // The available skeleton has a different field character than the requested skeleton.
+                    // The available skeleton has a different field character than the requested
+                    // skeleton.
                     // Adjust the field character if it is in an appropriate category.
                     if (reqChar != 'j' && reqChar != 'J' && reqChar != 'C') {
                         outChar = reqChar;
@@ -957,9 +963,12 @@ public class CldrDateTimePatternGenerator {
                 }
                 int reqLen = reqF.length();
                 if (availF.length() != reqLen) {
-                    // The available skeleton has a different field length than the requested skeleton.
-                    // Adjust the field length so long as we don't cross between numeric and alphabetic.
-                    if (isNumeric(patF) == isNumeric(reqF) && isNumeric(patF) == isNumeric(availF)) {
+                    // The available skeleton has a different field length than the requested
+                    // skeleton.
+                    // Adjust the field length so long as we don't cross between numeric and
+                    // alphabetic.
+                    if (isNumeric(patF) == isNumeric(reqF)
+                            && isNumeric(patF) == isNumeric(availF)) {
                         outLen = reqLen;
                     }
                 }
@@ -976,7 +985,7 @@ public class CldrDateTimePatternGenerator {
     /**
      * Converts a skeleton field like "E" to a pattern field like "EEE".
      *
-     * For most fields, this is a no-op.
+     * <p>For most fields, this is a no-op.
      */
     private static String skeletonFieldToPatternField(String skeletonField) {
         if ("E".equals(skeletonField)) {
