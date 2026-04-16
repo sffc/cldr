@@ -767,20 +767,42 @@ public class CldrDateTimePatternGenerator {
         }
         int diff = 0;
         if (availField.charAt(0) != requestedField.charAt(0)) {
-            diff += 16;
+            // Examples: h <=> H, b <=> a, y <=> U, v <=> z
+            diff += 8;
         }
         boolean isNumeric = isNumeric(availField);
         if (isNumeric != isNumeric(requestedField)) {
-            diff += 100;
+            diff += 128;
         }
         if (isNumeric) {
             diff += Math.abs(availField.length() - requestedField.length());
-            return diff;
+        } else {
+            // Normalize E to EEE
+            int l1 = Math.max(3, availField.length());
+            int l2 = Math.max(3, requestedField.length());
+            // From Mark: If they are a different length, then:
+            // - Between short and abbreviated is ~20
+            // - Between abbreviated and wide is ~20
+            // - Between short and wide is ~40
+            // - Narrow should be closest to short
+            //
+            // 3 = abbr
+            // 4 = wide
+            // 5 = narrow
+            // 6 = short
+            //
+            // 5' = narrow
+            // 6' = short
+            // 7' = abbr
+            // 8' = wide
+            if (l1 <= 4) {
+                l1 += 4;
+            }
+            if (l2 <= 4) {
+                l2 += 4;
+            }
+            diff += 16 * Math.abs(l1 - l2);
         }
-        // Normalize E to EEE
-        int l1 = Math.max(3, availField.length());
-        int l2 = Math.max(3, requestedField.length());
-        diff += 3 + Math.abs(l1 - l2);
         return diff;
     }
 
